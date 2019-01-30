@@ -18,6 +18,11 @@ static ip_addr_t default_ip_addr;
 static ip_addr_t default_netmask;
 static ip_addr_t default_gateway;
 
+// For formatting those three ip addresses at the same time
+static char b_ip_addr[16];
+static char b_netmask[16];
+static char b_gateway[16];
+
 struct netconn *server_connection;
 struct netif networkinterface;
 extern ETH_HandleTypeDef heth;
@@ -69,8 +74,12 @@ void network_init(sd_config_t* config)
 		ip4_addr_copy(ip_addr, config->ip_addr);
 		ip4_addr_copy(netmask, config->netmask);
 		ip4_addr_copy(gateway, config->gateway);
+
+		ip4addr_ntoa_r(&ip_addr, b_ip_addr, sizeof(b_ip_addr));
+		ip4addr_ntoa_r(&netmask, b_netmask, sizeof(b_netmask));
+		ip4addr_ntoa_r(&gateway, b_gateway, sizeof(b_gateway));
 		printf("No DHCP.\nIP address: %s\nNetmask: %s\nGateway: %s\n",
-				ip4addr_ntoa(&ip_addr), ip4addr_ntoa(&netmask), ip4addr_ntoa(&gateway));
+				b_ip_addr, b_netmask, b_gateway);
 	}
 
 	tcpip_init(NULL, NULL);
@@ -158,10 +167,11 @@ static void network_status_task_function(void const *argument) {
 		if (wait_for_dhcp) {
 			dhcp_timeout_counter++;
 			if (dhcp_supplied_address(&networkinterface)) {
+				ip4addr_ntoa_r(&(networkinterface.ip_addr), b_ip_addr, sizeof(b_ip_addr));
+				ip4addr_ntoa_r(&(networkinterface.netmask), b_netmask, sizeof(b_netmask));
+				ip4addr_ntoa_r(&(networkinterface.gw), b_gateway, sizeof(b_gateway));
 				printf("Got IP address: %s\nNetmask: %s\nGateway: %s\n",
-						ip4addr_ntoa(&(networkinterface.ip_addr)),
-						ip4addr_ntoa(&(networkinterface.netmask)),
-						ip4addr_ntoa(&(networkinterface.gw)));
+						b_ip_addr, b_netmask, b_gateway);
 
 				wait_for_dhcp = 0;
 
@@ -170,10 +180,12 @@ static void network_status_task_function(void const *argument) {
 			} else if ((dhcp_timeout_counter * NETWORK_STATUS_TASK_DELAY) > DHCP_TIMEOUT) {
 				dhcp_stop(&networkinterface);
 				netif_set_addr(&networkinterface, &default_ip_addr, &default_netmask, &default_gateway);
+				ip4addr_ntoa_r(&default_ip_addr, b_ip_addr, sizeof(b_ip_addr));
+				ip4addr_ntoa_r(&default_netmask, b_netmask, sizeof(b_netmask));
+				ip4addr_ntoa_r(&default_gateway, b_gateway, sizeof(b_gateway));
 				printf("DHCP timeout. Using default addresses.\nIP address: %s\nNetmask: %s\nGateway: %s\n",
-						ip4addr_ntoa(&default_ip_addr),
-						ip4addr_ntoa(&default_netmask),
-						ip4addr_ntoa(&default_gateway));
+						b_ip_addr, b_netmask, b_gateway);
+
 
 				wait_for_dhcp = 0;
 				start_server_task();

@@ -1,7 +1,7 @@
 ADS1262 measurement kit
 =======================
 
-A bachelor theses by Finn Stutzenstein.
+A bachelor theses project by Finn Stutzenstein.
 
 Description
 -----------
