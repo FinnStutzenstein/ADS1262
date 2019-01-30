@@ -1,0 +1,93 @@
+/*
+ * protocol.h
+ *
+ *  Created on: Oct 15, 2018
+ *      Author: finn
+ */
+
+#ifndef ADCP_H_
+#define ADCP_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "stdint.h"
+#include "connection.h"
+
+// Requests
+#define PREFIX_CONNECTION			0x10
+#define PREFIX_DEBUGGING			0x11
+#define PREFIX_MEASUREMENT			0x12
+#define PREFIX_ADC					0x13
+#define PREFIX_FFT					0x14
+#define PREFIX_CALIBRATION			0x15
+
+// Commands per request
+#define CONNECTION_SET_TYPE			0x00
+
+#define DEBUGGING_LWIP_STATS		0x00
+#define DEBUGGING_TEST_SCHEDULER	0x01
+#define DEBUGGING_TEST_MEMORY_BW	0x02
+#define DEBUGGING_OS_STATS			0x03
+#define DEBUGGING_CONNECTION_STATS	0x04
+
+#define MEASUREMENT_START			0x01
+#define MEASUREMENT_STOP			0x02
+#define MEASUREMENT_CREATE			0x03
+#define MEASUREMENT_DELETE			0x04
+#define MEASUREMENT_SET_INPUTS		0x05
+#define MEASUREMENT_SET_ENABLED		0x06
+#define MEASUREMENT_SET_AVERAGING	0x07
+#define MEASUREMENT_ONE_SHOT		0x08
+
+#define ADC_RESET					0x00
+#define ADC_SET_SR					0x01
+#define ADC_SET_FILTER				0x02
+#define ADC_PGA_SET_GAIN			0x03
+#define ADC_PGA_BYPASS				0x04
+#define ADC_REF_SET_INTERNAL		0x05
+#define ADC_REF_SET_EXTERNAL		0x06
+#define ADC_GET_STATUS				0x07
+
+#define FFT_SET_ENABLED				0x00
+#define FFT_SET_LENGTH				0x01
+#define FFT_SET_WINDOW				0x02
+
+#define CALIBRATION_SET_OFFSET		0x00
+#define CALIBRATION_SET_SCALE		0x01
+#define CALIBRATION_DO_OFFSET		0x02
+#define CALIBRATION_DO_SCALE		0x03
+
+// Reponses
+typedef enum {
+	RESPONSE_OK						=0x00,
+	RESPONSE_MESSAGE_TOO_SHORT		=0x01,
+	RESPONSE_INVALID_PREFIX			=0x02,
+	RESPONSE_INVALID_COMMAND		=0x03,
+	RESPONSE_TOO_FEW_ARGUMENTS		=0x04,
+	RESPONSE_NO_MEMORY				=0x05,
+	RESPONSE_NOT_ENABLED			=0x06,
+	RESPONSE_NO_MEASUREMENTS		=0x07,
+	RESPONSE_TOO_MUCH_MEASUREMENTS	=0x08,
+	RESPONSE_MEASUREMENT_ACTIVE		=0x09,
+	RESPONSE_NO_SUCH_MEASUREMENT	=0x0A,
+	RESPONSE_NO_ENABLED_MEASUREMENT	=0x0B,
+	RESPONSE_WRONG_ARGUMENT			=0x0C,
+	RESPONSE_FFT_NO_MEMORY			=0x0D,
+	RESPONSE_FFT_INVALID_LENGTH		=0x0E,
+	RESPONSE_FFT_INVALID_WINDOW		=0x0F,
+	RESPONSE_ADC_RESET				=0x10,
+	RESPONSE_CALIBRATION_TIMEOUT	=0x11,
+	RESPONSE_SOMETHING_IS_NOT_GOOD	=0x12,
+	RESPONSE_WRONG_REFERENCE_PINS	=0x13,
+} ProtocolError;
+
+uint8_t adcp_handle_command(connection_t* connection, uint8_t* data, uint16_t len, uint8_t* out_data, uint16_t* out_len, uint16_t max_len);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ADCP_H_ */

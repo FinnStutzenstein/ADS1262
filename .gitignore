@@ -1,0 +1,7 @@
+Debug/
+node_modules/
+.settings/
+.venv/
+*.pyc
+*.pcapng
+wireshark/
