@@ -4,7 +4,7 @@
 #include "error.h"
 #include "string.h"
 
-/* Hook prototypes */
+// Hook prototypes
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 void vApplicationMallocFailedHook();
 
