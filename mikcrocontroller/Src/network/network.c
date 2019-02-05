@@ -13,6 +13,7 @@
 #include "sd_config.h"
 
 static uint8_t use_dhcp;
+static uint8_t dhcp_timeout;
 
 static ip_addr_t default_ip_addr;
 static ip_addr_t default_netmask;
@@ -64,6 +65,7 @@ void network_init(sd_config_t* config)
 	ip4_addr_t gateway;
 
 	// Set values.
+	dhcp_timeout = config->dhcp_timeout;
 	if (config->use_dhcp) {
 		printf("DHCP is configured.\n");
 
@@ -135,7 +137,7 @@ static void network_status_task_function(void const *argument) {
 				netif_set_up(&networkinterface);
 
 				if (use_dhcp) {
-					printf("Get an ip from the network (timeout: %ds)...\n", DHCP_TIMEOUT/1000);
+					printf("Get an ip from the network (timeout: %ds)...\n", dhcp_timeout);
 					// Start DHCP negotiation
 					dhcp_start(&networkinterface);
 
@@ -177,7 +179,7 @@ static void network_status_task_function(void const *argument) {
 
 				// start echo thread
 				start_server_task();
-			} else if ((dhcp_timeout_counter * NETWORK_STATUS_TASK_DELAY) > DHCP_TIMEOUT) {
+			} else if ((dhcp_timeout_counter * NETWORK_STATUS_TASK_DELAY) > (dhcp_timeout_counter * 1000)) {
 				dhcp_stop(&networkinterface);
 				netif_set_addr(&networkinterface, &default_ip_addr, &default_netmask, &default_gateway);
 				ip4addr_ntoa_r(&default_ip_addr, b_ip_addr, sizeof(b_ip_addr));

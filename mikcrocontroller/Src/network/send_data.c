@@ -195,8 +195,12 @@ void send_debug_data(char* buffer, uint16_t len) {
 }
 
 /**
- * returns 1 on success. Failures can be no mem, not initialized, or send_type is NONE.
- * on failure because of mem, the current measurement is stopped, and the queues flushed.
+ * Sends the given data via the data send service. The data will be copied into one datadescriptor,
+ * if the data size is below DATA_DESCRIPTOR_USER_SPACE. You will get an error, if the data is bigger,
+ * so make sure it will fit. For larger chunks of data see send_data_non_copy.
+ * The data must be RAW data! Do not add any headers, this will be done for you.
+ * Returns 1 on success. Failures can be an out of memory, not initialized, or send_type is NONE.
+ * Note: On failure because of memory, the current measurement is stopped, and the queues are flushed!
  */
 uint8_t send_data(uint8_t send_type, uint8_t* data, uint16_t len) {
 	if (!initialized || send_type == SEND_TYPE_NONE) {
@@ -216,13 +220,16 @@ uint8_t send_data(uint8_t send_type, uint8_t* data, uint16_t len) {
 
 /**
  * Adds the data to the queue. The provided callback will be called, if the data is transmitted.
+ * Make sure your data have at least 7 Bytes of space before the given pointer, that can be accessed.
+ * This will be used to add a WebSocket and ADCP header.
  */
 inline uint8_t send_data_non_copy(uint8_t send_type, uint8_t* data, uint32_t len, void (*callback)(void*), void* cb_argument) {
 	return internal_send_data(send_type, data, len, callback, cb_argument);
 }
 
 /**
- * returns 1 on success. Failures can be no mem.
+ * Allocates a datadescriptor, fill it appropriately, set headers to the given data and put in in a queue.
+ * Returns 1 on success. Failures can be no memory.
  *
  * if callback is NULL, the data will be copied and must not be bigger then 4K!
  */
@@ -251,10 +258,7 @@ static uint8_t internal_send_data(uint8_t send_type, uint8_t* data, uint32_t len
 	}
 
 	// Add ADCP header (offset -3 from payload, length 3 bytes)
-	dd->adcp_dataptr = dataptr - 3;
-	dd->adcp_len = len + 3;
-	dd->adcp_dataptr[0] = send_type;
-	*(uint16_t*)(dd->adcp_dataptr+1) = len;
+	dd->adcp_dataptr = adcp_write_header(send_type, dataptr, len, &(dd->adcp_len));
 
 	// Add WS header.
 	dd->ws_dataptr = websocket_write_header(dd->adcp_dataptr, dd->adcp_len, &(dd->ws_len));
@@ -297,6 +301,7 @@ static uint8_t internal_send_data(uint8_t send_type, uint8_t* data, uint32_t len
 		}
 	}
 
+	// Some debug info for a full data queue
 	uint32_t pool_count = pool_get_used_entries_count(data_descriptor_pool);
 	uint32_t data_queue_count = queue_allocated(data_queue);
 	if (pool_count > 8) {
@@ -305,6 +310,7 @@ static uint8_t internal_send_data(uint8_t send_type, uint8_t* data, uint32_t len
 		print_to_debugger(b,l);
 	}
 
+	// Check for HTTP
 	if (queue == data_queue) {
 		if (http_permitted && data_queue_count > lock_http_threshold) {
 			http_permitted = 0;

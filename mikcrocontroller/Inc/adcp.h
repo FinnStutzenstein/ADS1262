@@ -81,10 +81,12 @@ typedef enum {
 	RESPONSE_CALIBRATION_TIMEOUT	=0x11,
 	RESPONSE_SOMETHING_IS_NOT_GOOD	=0x12,
 	RESPONSE_WRONG_REFERENCE_PINS	=0x13,
+	RESPONSE_MESSAGE_TOO_LONG		=0x14,
+	RESPONSE_MESSAGE_TYPE_NOT_SUPPORTED=0x15,
 } ProtocolError;
 
 uint8_t adcp_handle_command(connection_t* connection, uint8_t* data, uint16_t len, uint8_t* out_data, uint16_t* out_len, uint16_t max_len);
-
+uint8_t* adcp_write_header(uint8_t send_type, uint8_t* payload, uint16_t payload_length, uint16_t* package_length);
 
 #ifdef __cplusplus
 }

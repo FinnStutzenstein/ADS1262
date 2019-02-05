@@ -40,6 +40,7 @@ sd_config_t* read_sd_config() {
 static void set_to_defaults() {
 	// The defaults
 	sd_config.use_dhcp = 0;
+	sd_config.dhcp_timeout = 5;
 	IP4_ADDR(&(sd_config.ip_addr), 192, 168, 1, 20);
 	IP4_ADDR(&(sd_config.netmask), 255, 255, 255, 0);
 	IP4_ADDR(&(sd_config.gateway), 192, 168, 1, 1);
@@ -126,6 +127,11 @@ void parse_line(char* line) {
 
 	if (strcmp(key, "dhcp") == 0 && '1' == *value) {
 		sd_config.use_dhcp = 1;
+	} else if (strcmp(key, "dhcp_timeout") == 0){
+		int timeout = atoi(value);
+		if (timeout > 0 && timeout < 255) {
+			sd_config.dhcp_timeout = (uint8_t)timeout;
+		}
 	} else if (strcmp(key, "ip") == 0) {
 		process_ip_address(value, &(sd_config.ip_addr));
 	} else if (strcmp(key, "netmask") == 0) {

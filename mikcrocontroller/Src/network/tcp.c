@@ -28,15 +28,10 @@ uint8_t handle_TCP(connection_t* connection, uint8_t* data, uint16_t len) {
 	// use the connection buffer for the response.
 	uint8_t* out_data = (uint8_t*)response->buffer;
 	uint16_t out_len = 0;
-	// out_data+3 is the location of the message payload. The three bytes are for packaging the payload below.
-	uint8_t exit = adcp_handle_command(connection, data, len, out_data+3, &out_len, CONNECTION_BUFFER_SIZE-3);
-
-	// Set send data type and the length.
-	out_data[0] = SEND_TYPE_NONE;
-	*(uint16_t*)(out_data+1) = out_len;
+	uint8_t exit = adcp_handle_command(connection, data, len, out_data, &out_len, CONNECTION_BUFFER_SIZE);
 
 	// Write message.
-	netconn_write(connection->conn, out_data, out_len + 3, NETCONN_COPY);
+	netconn_write(connection->conn, out_data, out_len, NETCONN_COPY);
 
 	pool_free(connection_data_pool, response);
 	return exit;

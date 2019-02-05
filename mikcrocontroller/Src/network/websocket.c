@@ -18,9 +18,17 @@
 #define WEBSOCKET_BINARY_PACKAGE	0b10000010
 
 // Websocket packet with 1 byte of payload: RESPONSE_NO_MEMORY.
-// The wirst two bytes are FIN, opcode=2 (binary frame) and payloadlength = 1.
+// The first two bytes are FIN, opcode=2 (binary frame) and payloadlength = 1.
 const uint8_t  WebSocket_no_mem_error_code[] = {
 		WEBSOCKET_BINARY_PACKAGE, 1, RESPONSE_NO_MEMORY
+};
+
+const uint8_t  WebSocket_message_too_long_error_code[] = {
+		WEBSOCKET_BINARY_PACKAGE, 1, RESPONSE_MESSAGE_TOO_LONG
+};
+
+const uint8_t  WebSocket_message_type_not_supported_error_code[] = {
+		WEBSOCKET_BINARY_PACKAGE, 1, RESPONSE_MESSAGE_TYPE_NOT_SUPPORTED
 };
 
 static void send_pong(connection_t* connection, uint8_t* data, uint16_t len);
@@ -31,10 +39,15 @@ static void unmask_payload(uint8_t* payload, uint8_t* masking_key, uint16_t len)
 static void create_accept_header_value(char* key, char* accept_header);
 static uint8_t is_valid_key(const char* key);
 
+/**
+ * Handles WebSocket frames from the given Connection. The data and length is given.
+ * This function returns EXIT, if we must fail the WebSocket-connection (See RFC 6455), meaning,
+ * that something was wrong. Maybe there was some error send before.
+ */
 uint8_t handle_WebSocket(connection_t* connection, uint8_t* data, uint16_t len) {
 	// We do need at least 6 bytes: Header(2 bytes) and masking key (4 bytes)
 	if (len < 6) {
-		Error_Handler(); // TODO: fail the connection
+		return EXIT;
 	}
 
 	uint8_t FIN_set = data[0] & 0x80;
@@ -43,15 +56,15 @@ uint8_t handle_WebSocket(connection_t* connection, uint8_t* data, uint16_t len) 
 	uint8_t MASK_set = data[1] & 0x80;
 
 	if (!FIN_set) {
-		Error_Handler(); // We do not support fragmentation
+		return EXIT; // We do not support fragmentation
 	}
 
 	if (RSV_set) {
-		Error_Handler(); // Should not be set.
+		return EXIT; // Should not be set.
 	}
 
 	if (!MASK_set) {
-		Error_Handler(); // A client message has to be masked.
+		return EXIT; // A client message has to be masked.
 	}
 
 	uint8_t offset = 2; // First two bytes are finished.
@@ -61,14 +74,16 @@ uint8_t handle_WebSocket(connection_t* connection, uint8_t* data, uint16_t len) 
 		// get length from the following two bytes: The extended payload length
 		// But first check, if we got them -> We need two more bytes.
 		if (len < 8) {
-			Error_Handler();
+			return EXIT;
 		}
 
 		// in data[2] and data[3] is the length in little endian.
 		payload_length = data[3] | (data[2] << 8);
 		offset += 2;
 	} else if (payload_length == 127) {
-		Error_Handler(); // We do not support payloads above 64K of size.
+		netconn_write(connection->conn, WebSocket_message_too_long_error_code,
+			sizeof(WebSocket_message_too_long_error_code), NETCONN_COPY);
+		// We do not support payloads above 64K of size.
 	}
 
 	uint8_t* masking_key = data + offset;
@@ -76,7 +91,7 @@ uint8_t handle_WebSocket(connection_t* connection, uint8_t* data, uint16_t len) 
 
 	// check if we got exactly payload_length data.
 	if ((len - offset) != payload_length) {
-		Error_Handler();
+		return EXIT;
 	}
 
 	uint8_t* payload = data + offset;
@@ -84,11 +99,12 @@ uint8_t handle_WebSocket(connection_t* connection, uint8_t* data, uint16_t len) 
 
 	uint8_t exit = NOEXIT;
 	switch(opcode) {
-	case 1: // text frame
-		// Not supported.
-		Error_Handler();
+	case 1: // text frame: Not supported.
+		netconn_write(connection->conn, WebSocket_message_type_not_supported_error_code,
+					sizeof(WebSocket_message_type_not_supported_error_code), NETCONN_COPY);
+		break;
 	case 2: // binary frame
-		handle_frame(connection, payload, payload_length);
+		exit = handle_frame(connection, payload, payload_length);
 		break;
 	case 8: // close
 		send_close(connection);
@@ -101,7 +117,7 @@ uint8_t handle_WebSocket(connection_t* connection, uint8_t* data, uint16_t len) 
 		// What? Did we ever send a ping? Just ignore this..
 		break;
 	default:
-		Error_Handler(); // These are reserved
+		exit = EXIT; // These are reserved
 	}
 
 	return exit;
@@ -163,33 +179,25 @@ static uint8_t handle_frame(connection_t* connection, uint8_t* data, uint16_t le
 	connection_data_t* response = (connection_data_t*) pool_alloc(connection_data_pool);
 	if (NULL == response) {
 		netconn_write(connection->conn, WebSocket_no_mem_error_code, sizeof(WebSocket_no_mem_error_code), NETCONN_COPY);
-		return EXIT;
+		return NOEXIT;
 	}
 	uint8_t* buffer = (uint8_t*)response->buffer;
 
 	// We are going to write to the tcp connection directly. The format is:
-	//   |<-- space (2 or 0 bytes) -->|<-- WS header (2 or 4 bytes) -->|<-- ADCP header (3 bytes) -->|<-- payload -->|
-	//  (a)                          (b)                              (c)                           (d)             (e)
+	//   |<-- space (2 or 0 bytes) -->|<-- WS header (2 or 4 bytes) -->|<-- ADCP header and payload -->|
+	//  (a)                          (b)                              (c)                             (d)
 	// buffer points to (a). We reserve all 4 bytes for the WS header and point with `package_begin` to the actual
-	// beginning, namely (b). `package_length` is the length between (b) and (e).
-	// `ws_payload_begin` points to (c) and `ws_payload_length` is the amount of bytes between (c) and (e).
-	// `adcp_payload_begin` points to (d) and `adcp_payload_length` is the size between (d) and (e).
-	// (c) is fixed at `buffer+4` and (d) at `buffer+7`. (d) will be used to call the ADCP layer.
+	// beginning, namely (b). `package_length` is the length between (b) and (d).
+	// `ws_payload_begin` points to (c) and `ws_payload_length` is the amount of bytes between (c) and (d).
+	// (c) is fixed at `buffer+4`.
 
 	uint8_t* package_begin;
 	uint16_t package_length;
-	uint8_t* ws_payload_begin = buffer + 4;
+	uint8_t* ws_payload_begin = buffer + 4; // This is the complete ADCp package incl. header
 	uint16_t ws_payload_length;
-	uint8_t* adcp_payload_begin = buffer + 7;
-	uint16_t adcp_payload_length = 0;
 
 	// Handle ADCP.
-	uint8_t exit = adcp_handle_command(connection, data, len, adcp_payload_begin, &adcp_payload_length, CONNECTION_BUFFER_SIZE-7);
-	ws_payload_length = adcp_payload_length + 3; // Add the ADCP header.
-
-	// Set ADCP Header
-	ws_payload_begin[0] = SEND_TYPE_NONE;
-	*(uint16_t*)(ws_payload_begin + 1) = adcp_payload_length;
+	uint8_t exit = adcp_handle_command(connection, data, len, ws_payload_begin, &ws_payload_length, CONNECTION_BUFFER_SIZE-4);
 
 	// Websocket. The header has either 2 or 4 byte length decided by the ws_payload_length.
 	// Do we need extended length?
@@ -215,22 +223,22 @@ static uint8_t handle_frame(connection_t* connection, uint8_t* data, uint16_t le
  * uint16_t package_length;
  * uint8_t package_begin = websocket_write_header(payload, payload_length, &package_length);
  */
-uint8_t* websocket_write_header(uint8_t* payload, uint16_t playload_length, uint16_t* package_length) {
+uint8_t* websocket_write_header(uint8_t* payload, uint16_t payload_length, uint16_t* package_length) {
 	uint8_t* package_begin;
-	if (playload_length > 126) { // Yes.
+	if (payload_length > 126) { // Yes.
 		package_begin = payload - 4;
 		package_begin[0] = WEBSOCKET_BINARY_PACKAGE;
 		package_begin[1] = 127; // Enable extended length
 		// Now follows the 16 bit extended payload length in network byte order...
-		package_begin[2] = (playload_length & 0xFF00) >> 8;
-		package_begin[3] = playload_length & 0xFF;
-		*package_length = playload_length + 4;
+		package_begin[2] = (payload_length & 0xFF00) >> 8;
+		package_begin[3] = payload_length & 0xFF;
+		*package_length = payload_length + 4;
 	} else {
 		// No extended length needed.
 		package_begin = payload - 2;
 		package_begin[0] = WEBSOCKET_BINARY_PACKAGE;
-		package_begin[1] = playload_length;
-		*package_length = playload_length + 2;
+		package_begin[1] = payload_length;
+		*package_length = payload_length + 2;
 	}
 	return package_begin;
 }
@@ -264,7 +272,7 @@ static void unmask_payload(uint8_t* payload, uint8_t* masking_key, uint16_t len)
  */
 uint8_t websocket_handshake(connection_t* connection, request_headers_t* headers) {
 	if (!verify_headers(headers)) {
-		return 0;
+		return 0; // The error is send by the HTTP module.
 	}
 
 	char accept_header[WEBSOCKET_ACCEPT_LENGTH + 1];

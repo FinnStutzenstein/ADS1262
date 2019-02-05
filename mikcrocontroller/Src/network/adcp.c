@@ -44,6 +44,10 @@ uint8_t adcp_handle_command(connection_t* connection, uint8_t* data, uint16_t le
 		Error_Handler();
 	}
 
+	uint8_t* payload = out_data + 3; // Reserve three bytes for the header.
+	uint16_t payload_max_len = max_len - 3;
+	uint16_t payload_len = 0;
+
 	// We do need at least two bytes.
 	if (len < 2) {
 		out_data[0] = RESPONSE_MESSAGE_TOO_SHORT;
@@ -55,31 +59,55 @@ uint8_t adcp_handle_command(connection_t* connection, uint8_t* data, uint16_t le
 	uint8_t prefix = data[0];
 	switch(prefix) {
 	case PREFIX_CONNECTION:
-		exit = adcp_handle_connection_command(connection, data, len, out_data, out_len, max_len);
+		exit = adcp_handle_connection_command(connection, data, len, payload, &payload_len, payload_max_len);
 		break;
 	case PREFIX_DEBUGGING:
-		exit = adcp_handle_debugging_command(data, len, out_data, out_len, max_len);
+		exit = adcp_handle_debugging_command(data, len, payload, &payload_len, payload_max_len);
 		break;
 	case PREFIX_MEASUREMENT:
-		exit = adcp_handle_measurement_command(data, len, out_data, out_len, max_len);
+		exit = adcp_handle_measurement_command(data, len, payload, &payload_len, payload_max_len);
 		break;
 	case PREFIX_ADC:
-		exit = adcp_handle_ADC_command(data, len, out_data, out_len, max_len);
+		exit = adcp_handle_ADC_command(data, len, payload, &payload_len, payload_max_len);
 		break;
 	case PREFIX_FFT:
-		exit = adcp_handle_FFT_command(data, len, out_data, out_len, max_len);
+		exit = adcp_handle_FFT_command(data, len, payload, &payload_len, payload_max_len);
 		break;
 	case PREFIX_CALIBRATION:
-		exit = adcp_handle_calibration_command(data, len, out_data, out_len, max_len);
+		exit = adcp_handle_calibration_command(data, len, payload, &payload_len, payload_max_len);
 		break;
 	default:
-		out_data[0] = RESPONSE_INVALID_PREFIX;
-		out_data[1] = prefix;
-		*out_len = 2;
+		payload[0] = RESPONSE_INVALID_PREFIX;
+		payload[1] = prefix;
+		payload_len = 2;
 		exit = EXIT;
 		break;
 	}
+
+	adcp_write_header(SEND_TYPE_NONE, payload, payload_len, out_len);
 	return exit;
+}
+
+/**
+ * Adds the ADCP header to the payload. Make sure, you have 3 bytes space before the payload (Also
+ * for the payload pointer!). The package begin will be returned and the complete package length
+ * written to packge_length.
+ *
+ * Ex.: uint8_t* buffer = <some memory>
+ * uint8_t* payload = buffer+3;
+ * <put something into payload>
+ * uint16_t package_length;
+ * uint8_t package_begin = adcp_write_header(payload, payload_length, &package_length);
+ */
+uint8_t* adcp_write_header(uint8_t send_type, uint8_t* payload, uint16_t payload_length, uint16_t* package_length) {
+	uint8_t* package_begin = payload - 3;
+
+	// Set header
+	package_begin[0] = send_type;
+	*(uint16_t*)(package_begin + 1) = payload_length;
+
+	*package_length = payload_length + 3;
+	return package_begin;
 }
 
 /**

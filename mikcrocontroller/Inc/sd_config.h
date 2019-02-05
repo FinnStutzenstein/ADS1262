@@ -19,6 +19,7 @@ extern "C" {
 
 typedef struct {
 	uint8_t use_dhcp;
+	uint8_t dhcp_timeout; // in seconds
 	ip_addr_t ip_addr;
 	ip_addr_t netmask;
 	ip_addr_t gateway;

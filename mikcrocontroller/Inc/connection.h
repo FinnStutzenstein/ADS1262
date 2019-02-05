@@ -25,7 +25,7 @@ extern "C" {
 #define SEND_TYPE_DATA		0x04
 #define SEND_TYPE_FFT		0x08
 
-#define CONNECTION_BUFFER_SIZE	(1<<16) // 64K
+#define CONNECTION_BUFFER_SIZE	((1<<16)-1) // 64K
 
 // All connection types, a TCP connection can have.
 typedef enum {
