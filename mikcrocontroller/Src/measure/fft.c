@@ -21,7 +21,6 @@ static void fft_set_package_metadata(FFT_instance* fft, fft_packet_metadata* m);
 static void fft_transmitted(void* fft);
 static void fft_transmit_frame(FFT_instance* fft);
 static void FFT(complex* samples, uint16_t N);
-static void REALFFT(FFT_DATATYPE* samples, uint16_t N);
 static uint8_t get_bits(uint16_t number);
 
 osThreadDef(fft_task, fft_task_function, osPriorityNormal, MAX_MEASUREMENTS, 512);
@@ -77,7 +76,7 @@ inline void fft_set_enabled(FFT_instance* fft, uint8_t enabled) {
  * Sets the window of the fft instance to the given window by name.
  * Tries to find this window.
  */
-ProtocolError fft_set_window(FFT_instance* fft, uint8_t window_index) {
+protocol_error_t fft_set_window(FFT_instance* fft, uint8_t window_index) {
 	// Check, if the index is correct
 	if (RECTANGULAR_WINDOW_INDEX != window_index && window_index >= WINDOW_FUNCTIONS) {
 		return RESPONSE_FFT_INVALID_WINDOW;
@@ -419,7 +418,7 @@ static void FFT(complex* samples, uint16_t N) {
  * of the FFT, with samples[0] as F_0 and samples[1] = F_N/2, both real.
  * The samples needs to be bitreversed!
  */
-static void REALFFT(FFT_DATATYPE* samples, uint16_t N) {
+void REALFFT(FFT_DATATYPE* samples, uint16_t N) {
 	uint16_t N_half = N/2;
 
 	// Interpret samples as complex
@@ -459,3 +458,53 @@ static uint8_t get_bits(uint16_t number) {
     }
     return bits-1;
 }
+
+/**
+ * If COMPARE_FFT is defined, we have some helper functions
+ * to generate samples.
+ */
+#ifdef COMPARE_FFTS
+#include "arm_math.h"
+#include "math.h"
+
+float __section(".extsram") samples[COMPARE_FFTS_N];
+float __section(".extsram") out_samples[COMPARE_FFTS_N];
+
+float f(FFT_DATATYPE x) {
+    return 3.0 + cos(2 * (FFT_DATATYPE)M_PI * x * 500) + cos(2 * (FFT_DATATYPE)M_PI * x * 1000); // 500hz sine wave
+}
+
+void gen_samples_real(FFT_DATATYPE* samples, uint16_t N, uint32_t samplerate) {
+	FFT_DATATYPE sr = (FFT_DATATYPE)samplerate;
+    for (int i = 0; i < N; i++) {
+    	FFT_DATATYPE x = (FFT_DATATYPE)i/sr;
+    	samples[i] = f(x);
+    }
+}
+
+void compare_fft_algorithms(uint32_t* own, uint32_t* dsp_lib) {
+	printf("First own implementation, then DSP-Lib. N=%d\n", COMPARE_FFTS_N);
+	gen_samples_real(samples, COMPARE_FFTS_N, COMPARE_FFTS_SR);
+	uint64_t start = measure_reference_timer_ticks;
+	REALFFT(samples, COMPARE_FFTS_N);
+	uint64_t stop = measure_reference_timer_ticks;
+	*own = stop - start;
+	printf("own implementation: %lu\n", *own);
+
+	// DSP lib implementation
+	gen_samples_real(samples, COMPARE_FFTS_N, COMPARE_FFTS_SR);
+	start = measure_reference_timer_ticks;
+
+	// Some initializations
+	arm_rfft_instance_f32 S;
+	arm_cfft_radix4_instance_f32 S_CFFT;
+	arm_status s = arm_rfft_init_f32(&S, &S_CFFT, COMPARE_FFTS_N, 0, 1);
+	printf("status1: %d\n", s);
+	// Do the fft.
+	arm_rfft_f32(&S, samples, out_samples);
+
+	stop = measure_reference_timer_ticks;
+	*dsp_lib = stop - start;
+	printf("DSP lib implementation: %lu\n", *dsp_lib);
+}
+#endif

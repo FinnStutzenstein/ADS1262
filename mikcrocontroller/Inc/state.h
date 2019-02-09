@@ -36,7 +36,7 @@ typedef struct __packed {
 	} flags;
 	uint8_t sr_filter;
 	uint8_t pga;
-	uint64_t v_ref_microvolt;
+	uint64_t v_ref_tennanovolt;
 	uint8_t v_ref_inputs;
 	int64_t calibration_offset;
 	uint64_t calibration_scale;

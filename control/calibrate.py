@@ -136,7 +136,7 @@ class Main():
         inputs = self.value_to_bytes(pos, 'u8') + self.value_to_bytes(neg, 'u8')
         resp = self.send_command('calibrationsequence offset', inputs, timeout=timeout)
         offset = struct.unpack('<i', resp[1:5])[0]
-        offset_diff_nv = (v_ref * -offset) / pow(2, 24)
+        offset_diff_nv = (v_ref * 10 * -offset) / pow(2, 24)
 
         # Scale: get inputs and confirm
         print('\nScale calibration: Please apply a full scale voltage (v_ref) to two inputs!')

@@ -63,13 +63,6 @@ void connection_task_function(void const *argument) {
 			}
 		}
 
-		// TODO
-		/*if ((connection->type == CONNECTION_TYPE_TCP || connection->type == CONNECTION_TYPE_WEBSOCKET)
-				&& (connection->send_type & (SEND_TYPE_DATA | SEND_TYPE_FFT | SEND_TYPE_STATUS))) {
-			printf("set NDELAY\n");
-			connection->conn->pcb.tcp->flags |= TF_NODELAY | TF_ACK_NOW;
-		}*/
-
 		// If until everything was fine, dispatch the message.
 		if (exit == NOEXIT) {
 			switch(connection->type) {

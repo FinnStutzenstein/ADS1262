@@ -179,7 +179,7 @@ class DataThread(threading.Thread):
                 # by the second one), skip this.
         self.last_frame_number = frame_number
 
-        # add lst bytes to the buffer
+        # add last bytes to the buffer
         buff = self.last_bytes + buff[self.metadata_size:]
         data_len = len(buff)
         data = np.array([])

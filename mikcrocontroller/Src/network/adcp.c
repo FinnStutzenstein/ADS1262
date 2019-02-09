@@ -139,6 +139,9 @@ static uint8_t adcp_handle_debugging_command(uint8_t* data, uint16_t len, uint8_
 	uint8_t command = data[1];
 	uint8_t exit = NOEXIT;
 
+#ifdef COMPARE_FFTS
+	uint32_t own, dsp_lib;
+#endif
 	switch (command) {
 	case DEBUGGING_LWIP_STATS:
 		*out_len = format_network_stats(out_data, max_len);
@@ -159,6 +162,17 @@ static uint8_t adcp_handle_debugging_command(uint8_t* data, uint16_t len, uint8_
 	case DEBUGGING_CONNECTION_STATS:
 		*out_len = format_connections_stats(out_data, max_len);
 		break;
+	case DEBUGGING_COMPARE_FFTS:
+#ifdef COMPARE_FFTS
+		compare_fft_algorithms(&own, &dsp_lib);
+		out_data[0] = RESPONSE_OK;
+		*(uint32_t*)(out_data + 1) = own;
+		*(uint32_t*)(out_data + 5) = dsp_lib;
+		*out_len = 9;
+#else
+		SET_RESPONSE(RESPONSE_NOT_ENABLED);
+#endif
+		break;
 	default:
 		adcp_send_wrong_command_response(command, out_data, out_len);
 		return EXIT;
@@ -174,7 +188,7 @@ static uint8_t adcp_handle_measurement_command(uint8_t* data, uint16_t len, uint
 	uint8_t* args = data+2;
 
 	// used in the switch-case:
-	ProtocolError err;
+	protocol_error_t err;
 	uint16_t averaging;
 	uint8_t id;
 
@@ -215,21 +229,21 @@ static uint8_t adcp_handle_measurement_command(uint8_t* data, uint16_t len, uint
 		err = measurement_delete(args[0]);
 		SET_RESPONSE(err);
 		break;
-	case MEASUREMENT_SET_INPUTS:
+	case MEASUREMENT_SET_INPUTS: // id, pos, neg
 		if (!adcp_check_arg_len(len, 3, out_data, out_len)) {
 			return EXIT;
 		}
 		err = measurement_set_inputs(args[0], args[1], args[2]);
 		SET_RESPONSE(err);
 		break;
-	case MEASUREMENT_SET_ENABLED:
+	case MEASUREMENT_SET_ENABLED: // id, enabled
 		if (!adcp_check_arg_len(len, 2, out_data, out_len)) {
 			return EXIT;
 		}
 		err = measurement_set_enabled(args[0], args[1]);
 		SET_RESPONSE(err);
 		break;
-	case MEASUREMENT_SET_AVERAGING:
+	case MEASUREMENT_SET_AVERAGING: // id, averaging (uint16_t)
 		if (!adcp_check_arg_len(len, 3, out_data, out_len)) {
 			return EXIT;
 		}
@@ -280,7 +294,7 @@ static uint8_t adcp_handle_ADC_command(uint8_t* data, uint16_t len, uint8_t* out
 		ADS1262_set_to_state(get_current_state());
 		SET_OK;
 		break;
-	case ADC_SET_SR:
+	case ADC_SET_SR: // uint8_t
 		if (!adcp_check_arg_len(len, 1, out_data, out_len)) {
 			return EXIT;
 		}
@@ -291,7 +305,7 @@ static uint8_t adcp_handle_ADC_command(uint8_t* data, uint16_t len, uint8_t* out
 		ADS1262_set_samplerate(args[0]);
 		SET_OK;
 		break;
-	case ADC_SET_FILTER:
+	case ADC_SET_FILTER: // uint8_t
 		if (!adcp_check_arg_len(len, 1, out_data, out_len)) {
 			return EXIT;
 		}
@@ -443,7 +457,7 @@ static uint8_t adcp_handle_calibration_command(uint8_t* data, uint16_t len, uint
 
 	int32_t offset;
 	uint32_t scale;
-	ProtocolError err;
+	protocol_error_t err;
 
 	switch (command) {
 	case CALIBRATION_SET_OFFSET: // We need a int32_t, but limited by 24 bits. If the number send is too big
@@ -454,7 +468,7 @@ static uint8_t adcp_handle_calibration_command(uint8_t* data, uint16_t len, uint
 		ADS1262_set_calibration_offset(*((int32_t*)args));
 		SET_OK;
 		break;
-	case CALIBRATION_SET_SCALE: // We need a uin32_t, but limited to 2 bits. If the number is too big, it
+	case CALIBRATION_SET_SCALE: // We need a uin32_t, but limited to 24 bits. If the number is too big, it
 		// will be limited.
 		if (!adcp_check_arg_len(len, 4, out_data, out_len)) {
 			return EXIT;

@@ -31,6 +31,7 @@ extern "C" {
 #define DEBUGGING_TEST_MEMORY_BW	0x02
 #define DEBUGGING_OS_STATS			0x03
 #define DEBUGGING_CONNECTION_STATS	0x04
+#define DEBUGGING_COMPARE_FFTS		0x05
 
 #define MEASUREMENT_START			0x01
 #define MEASUREMENT_STOP			0x02
@@ -83,7 +84,7 @@ typedef enum {
 	RESPONSE_WRONG_REFERENCE_PINS	=0x13,
 	RESPONSE_MESSAGE_TOO_LONG		=0x14,
 	RESPONSE_MESSAGE_TYPE_NOT_SUPPORTED=0x15,
-} ProtocolError;
+} protocol_error_t;
 
 uint8_t adcp_handle_command(connection_t* connection, uint8_t* data, uint16_t len, uint8_t* out_data, uint16_t* out_len, uint16_t max_len);
 uint8_t* adcp_write_header(uint8_t send_type, uint8_t* payload, uint16_t payload_length, uint16_t* package_length);

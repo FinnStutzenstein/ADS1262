@@ -190,7 +190,7 @@ void ADS1262_set_to_state(complete_state_t* state) {
 		uint8_t pos = state->adc.v_ref_inputs & 0x0F;
 		uint8_t neg = (state->adc.v_ref_inputs >> 4) & 0x0F;
 		ADS1262_disable_internal_reference();
-		ADS1262_set_reference(pos, neg, state->adc.v_ref_microvolt);
+		ADS1262_set_reference(pos, neg, state->adc.v_ref_tennanovolt);
 	}
 	ADS1262_set_reference_polarity_normal();
 

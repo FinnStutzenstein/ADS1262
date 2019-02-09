@@ -5,6 +5,8 @@ samplerate_reverse_lookup = [2.5, 5, 10, 16.6, 20, 50, 60, 100, 400,
                              1200, 2400, 4800, 7200, 14400, 19200, 38400]
 filter_reverse_lookup = ['sinc1', 'sinc2', 'sinc3', 'sinc4', 'FIR']
 pga_reverse_lookup = ['1', '2', '4', '8', '16', '32']
+ref_pos_pin_lookup = ['0', '2', '4', 'AVDD']
+ref_neg_pin_lookup = ['1', '3', '5', 'AVSS']
 window_reverse_lookup = {
     0: 'Hann',
     1: 'Berlett',
@@ -104,11 +106,12 @@ class State:
             self.filter = filter_reverse_lookup[(sr_filter & 0xF0) >> 4]
         except IndexError:
             self.filter = "unknown filter"
-        self.v_ref_neg = int(v_ref_inputs & 0x0F)
-        self.v_ref_pos = int((v_ref_inputs & 0xF0) >> 4)
+        self.v_ref_neg = ref_pos_pin_lookup[int(v_ref_inputs & 0x0F)]
+        self.v_ref_pos = ref_neg_pin_lookup[int((v_ref_inputs & 0xF0) >> 4)]
 
         # Get the actual meaning of the offset and scale values.
-        self.cal_offset_diff_nv = (self.v_ref * -self.calibration_offset) / pow(2, 24)
+        # *10 is for converting ten
+        self.cal_offset_diff_nv = (self.v_ref * 10 * -self.calibration_offset) / pow(2, 24)
         self.cal_scale_diff = ((self.calibration_scale/0x400000)-1)
 
         # Holds all the measurements.

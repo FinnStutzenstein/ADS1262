@@ -35,7 +35,7 @@ uint16_t value_buffer_index;
 
 static inline uint8_t send_buffer();
 static inline void setup_valuebuffer();
-static ProtocolError measure_do_calibration(uint8_t pos_input, uint8_t neg_input, calibration_type_t type, void* cal_value);
+static protocol_error_t measure_do_calibration(uint8_t pos_input, uint8_t neg_input, calibration_type_t type, void* cal_value);
 
 /**
  * Initializes the measure module
@@ -235,7 +235,7 @@ inline measure_state_t measure_get_state() {
  * Start the measurements. May raise errors, if there are no measurements etc.
  * Sets up the buffers for enabled fft instances, finds the first measurement,...
  */
-ProtocolError measure_start() {
+protocol_error_t measure_start() {
 	if (measurement_get_active_count() == 0) {
 		return RESPONSE_NO_MEASUREMENTS;
 	}
@@ -288,7 +288,7 @@ ProtocolError measure_start() {
 /**
  * Stops running measurements. Sends the value buffer, if some samples were not send yet.
  */
-ProtocolError measure_stop() {
+protocol_error_t measure_stop() {
 	uint8_t was_started = is_measure_active();
 	measure_state = MEASURE_STATE_IDLE;
 	ADS1262_stop_ADC();
@@ -302,7 +302,7 @@ ProtocolError measure_stop() {
 	return RESPONSE_OK;
 }
 
-ProtocolError measure_oneshot(uint8_t measurement_id, int32_t* value) {
+protocol_error_t measure_oneshot(uint8_t measurement_id, int32_t* value) {
 	if (MEASURE_STATE_IDLE != measure_state) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}
@@ -354,7 +354,7 @@ ProtocolError measure_oneshot(uint8_t measurement_id, int32_t* value) {
  * Does offset calibration. Needs to be called from a thread, because it will be paused until
  * we got a response from the ADC. Provides the offset value through `offset`
  */
-inline ProtocolError measure_do_offset_calibration(uint8_t pos_input, uint8_t neg_input, int32_t* offset) {
+inline protocol_error_t measure_do_offset_calibration(uint8_t pos_input, uint8_t neg_input, int32_t* offset) {
 	return measure_do_calibration(pos_input, neg_input, CALIBRATION_TYPE_OFFSET, (void*) offset);
 }
 
@@ -362,14 +362,14 @@ inline ProtocolError measure_do_offset_calibration(uint8_t pos_input, uint8_t ne
  * Does scale calibration. Needs to be called from a thread, because it will be paused until
  * we got a response from the ADC. Provides the scale value through `scale`
  */
-inline ProtocolError measure_do_scale_calibration(uint8_t pos_input, uint8_t neg_input, uint32_t* scale) {
+inline protocol_error_t measure_do_scale_calibration(uint8_t pos_input, uint8_t neg_input, uint32_t* scale) {
 	return measure_do_calibration(pos_input, neg_input, CALIBRATION_TYPE_SCALE, (void*) scale);
 }
 
 /**
  * Does one calibration
  */
-static ProtocolError measure_do_calibration(uint8_t pos_input, uint8_t neg_input, calibration_type_t type, void* cal_value) {
+static protocol_error_t measure_do_calibration(uint8_t pos_input, uint8_t neg_input, calibration_type_t type, void* cal_value) {
 	if (MEASURE_STATE_IDLE != measure_state) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}

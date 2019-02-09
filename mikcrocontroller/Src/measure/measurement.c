@@ -64,7 +64,7 @@ inline void measurement_reset_averaging(measurement_t* m) {
 /**
  * Creates a new measurement. Return the correct status code for ADCP.
  */
-ProtocolError measurement_create(uint8_t pos, uint8_t neg, uint8_t enabled, uint16_t averaging, uint8_t* id) {
+protocol_error_t measurement_create(uint8_t pos, uint8_t neg, uint8_t enabled, uint16_t averaging, uint8_t* id) {
 	if (is_measure_active()) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}
@@ -106,7 +106,7 @@ measurement_t* measurement_get_by_id(uint8_t id) {
 /**
  * Deletes a measurement.
  */
-ProtocolError measurement_delete(uint8_t id) {
+protocol_error_t measurement_delete(uint8_t id) {
 	if (is_measure_active()) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}
@@ -123,7 +123,7 @@ ProtocolError measurement_delete(uint8_t id) {
 /**
  * Sets the input of a measurement
  */
-ProtocolError measurement_set_inputs(uint8_t id, uint8_t pos, uint8_t neg) {
+protocol_error_t measurement_set_inputs(uint8_t id, uint8_t pos, uint8_t neg) {
 	if (is_measure_active()) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}
@@ -139,7 +139,7 @@ ProtocolError measurement_set_inputs(uint8_t id, uint8_t pos, uint8_t neg) {
 /**
  * Enables or disables a measurement.
  */
-ProtocolError measurement_set_enabled(uint8_t id, uint8_t enabled) {
+protocol_error_t measurement_set_enabled(uint8_t id, uint8_t enabled) {
 	if (is_measure_active()) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}
@@ -155,7 +155,7 @@ ProtocolError measurement_set_enabled(uint8_t id, uint8_t enabled) {
 /**
  * Sets the averaging of a measurement
  */
-ProtocolError measurement_set_averaging(uint8_t id, uint16_t averaging) {
+protocol_error_t measurement_set_averaging(uint8_t id, uint16_t averaging) {
 	if (is_measure_active()) {
 		return RESPONSE_MEASUREMENT_ACTIVE;
 	}

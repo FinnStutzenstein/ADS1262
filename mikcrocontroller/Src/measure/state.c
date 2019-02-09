@@ -61,7 +61,7 @@ void update_adc_state(uint8_t send_and_save_state) {
 		state.adc.flags.internal_reference = ADS1262_read_is_internal_reference_used();
 		state.adc.sr_filter = ADS1262_read_samplerate() | (ADS1262_read_filter() << 4);
 		state.adc.pga = ADS1262_read_gain();
-		state.adc.v_ref_microvolt = ADS1262_get_reference_voltage();
+		state.adc.v_ref_tennanovolt = ADS1262_get_reference_voltage();
 		state.adc.calibration_offset = ADS1262_read_calibration_offset();
 		state.adc.calibration_scale = ADS1262_read_calibration_scale();
 	}
@@ -278,7 +278,7 @@ static uint8_t set_state(uint8_t* data, uint16_t length) {
 		return 0;
 	}
 
-	if (s->flags.internal_reference && s->v_ref_microvolt != ADS1262_REF_INTERNAL_TENNANOVOLTS) {
+	if (s->flags.internal_reference && s->v_ref_tennanovolt != ADS1262_REF_INTERNAL_TENNANOVOLTS) {
 		return 0;
 	}
 

@@ -18,6 +18,9 @@ extern "C" {
 #include "adcp.h"
 #include "send_data.h"
 
+// Enables the compare fft feature via ADCP. Remove for production.
+// #define COMPARE_FFTS
+
 #define MAX_FFT_BITS        		14 /* 16384 */
 #define MAX_FFT_SIZE        		(1<<MAX_FFT_BITS)
 #define MIN_FFT_BITS        		3 /* 16 */
@@ -93,7 +96,7 @@ uint8_t fft_instance_enabled(FFT_instance* fft);
 void fft_instance_init(FFT_instance* fft, uint8_t id);
 void fft_instance_deinit(FFT_instance* fft);
 void fft_set_enabled(FFT_instance* fft, uint8_t enabled);
-ProtocolError fft_set_window(FFT_instance* fft, uint8_t window_index);
+protocol_error_t fft_set_window(FFT_instance* fft, uint8_t window_index);
 uint8_t fft_is_valid_length(uint16_t length);
 uint8_t fft_set_length(FFT_instance* fft, uint16_t length);
 void fft_set_raw_buffer(FFT_instance* fft, uint8_t* raw_buffer);
@@ -101,6 +104,14 @@ void fft_clear_buffer_pointers(FFT_instance* fft);
 uint32_t fft_needed_buffer_size(FFT_instance* fft);
 void fft_prepare_instances(FFT_instance** fft_instances, uint8_t N);
 void fft_instance_new_value(FFT_instance *fft, uint32_t value, uint64_t timestamp);
+
+void REALFFT(FFT_DATATYPE* samples, uint16_t N);
+
+#ifdef COMPARE_FFTS
+#define COMPARE_FFTS_N	512
+#define COMPARE_FFTS_SR	50000
+void compare_fft_algorithms(uint32_t* own, uint32_t* dsp_lib);
+#endif
 
 #ifdef __cplusplus
 }
