@@ -1,24 +1,24 @@
 import { Component } from '@angular/core';
-import { WebsocketService } from '../services/websocket.service';
-import { ADCPService } from '../services/adcp.service';
-import { DebugService } from '../services/debug.service';
+
+import { ADCPRepresentationService } from '../services/adcp-representation.service';
 
 @Component({
     selector: 'app-site',
-    templateUrl: './site.component.html'
+    templateUrl: './site.component.html',
+    styleUrls: ['./site.component.scss']
 })
 export class SiteComponent {
-    title = 'ads1262';
+    public constructor(private adcpRepService: ADCPRepresentationService) {}
 
-    public constructor(private ws: WebsocketService, private adcp: ADCPService, private debugService: DebugService) {
-        console.log(ws);
-
-        this.debugService.getDebugMessageObservable().subscribe(msg => {
-            console.log('DEBUG', msg);
-        });
+    public sendOk(): void {
+        this.adcpRepService.respOk();
     }
 
-    public async connect(): Promise<void> {
-        this.ws.connect('192.168.1.20');
+    public sendError(): void {
+        this.adcpRepService.respError();
+    }
+
+    public sendStatus(): void {
+        this.adcpRepService.respStatus();
     }
 }

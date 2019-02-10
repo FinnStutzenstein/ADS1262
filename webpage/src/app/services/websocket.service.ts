@@ -9,11 +9,16 @@ export class WebsocketService {
 
     private websocket = null;
 
-    private connectionEvent = new EventEmitter<void>();
+    private readonly connectionEvent = new EventEmitter<void>();
+
+    private readonly closeEvent = new EventEmitter<void>();
 
     public constructor(private zone: NgZone) {}
 
     public connect(host: string): void {
+        this.connectionEvent.emit();
+        return;
+
         this.websocket = new WebSocket(`ws://${host}/ws`);
         this.websocket.binaryType = 'arraybuffer';
 
@@ -36,13 +41,27 @@ export class WebsocketService {
             console.log('close', event);
             this.zone.run(() => {
                 this.websocket = null;
-                console.error('Websocket closed', event);
+                this.closeEvent.emit();
             });
         };
     }
 
+    public disconnect() {
+        if (this.websocket) {
+            this.websocket.close();
+            this.websocket = null;
+        }
+
+        // TODO: remove
+        this.closeEvent.emit();
+    }
+
     public getConnectionEventObservable(): Observable<void> {
         return this.connectionEvent.asObservable();
+    }
+
+    public getCloseEventObservable(): Observable<void> {
+        return this.closeEvent.asObservable();
     }
 
     public getMessageObservable(): Observable<ArrayBuffer> {
@@ -50,10 +69,11 @@ export class WebsocketService {
     }
 
     public send(data: ArrayBuffer): void {
-        if (!this.websocket) {
+        /*if (!this.websocket) {
             throw new Error('WS is not open');
         }
 
-        this.websocket.send(data);
+        this.websocket.send(data);*/
+        console.log('send', data);
     }
 }

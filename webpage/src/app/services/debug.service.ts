@@ -7,7 +7,7 @@ import { Subject, Observable } from 'rxjs';
     providedIn: 'root'
 })
 export class DebugService {
-    private debugMessageSubject: Subject<string> = new Subject<string>();
+    private readonly debugMessageLineSubject: Subject<string> = new Subject<string>();
 
     private decoder = new TextDecoder('ascii');
 
@@ -17,12 +17,12 @@ export class DebugService {
             text.split('\n')
                 .filter(x => !!x)
                 .forEach(part => {
-                    this.debugMessageSubject.next(part);
+                    this.debugMessageLineSubject.next(part);
                 });
         });
     }
 
-    public getDebugMessageObservable(): Observable<string> {
-        return this.debugMessageSubject.asObservable();
+    public getDebugMessageLineObservable(): Observable<string> {
+        return this.debugMessageLineSubject.asObservable();
     }
 }

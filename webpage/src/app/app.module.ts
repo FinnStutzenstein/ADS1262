@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -8,7 +9,7 @@ import { ADCPRepresentationService } from './services/adcp-representation.servic
 
 @NgModule({
     declarations: [AppComponent],
-    imports: [BrowserModule, AppRoutingModule],
+    imports: [CommonModule, BrowserModule, AppRoutingModule],
     providers: [WebsocketService, ADCPRepresentationService],
     bootstrap: [AppComponent]
 })

@@ -1,0 +1,38 @@
+<div>
+    <div *ngIf="!state">
+        <p class="gray">
+            Kein aktueller Status vorhanden
+        </p>
+    </div>
+    <div *ngIf="state">
+        <h3>ADC Status: {{ state.verboseStarted }}</h3>
+        <p *ngIf="state.internalReference">Interne Referenz (2,5 V)</p>
+        <div *ngIf="!state.internalReference">
+            <p>Externe Referenz ({{ state.vRef*10 }} nV)</p>
+            <p>Eingänge: {{ state.verboseVRefPos }} {{ state.verboseVRefNeg }}</p>
+        </div>
+
+        <p *ngIf="state.slowConnection" class="danger">ADC auf Grund einer Langsamen Verbindung gestoppt</p>
+        <p *ngIf="state.ADCReset" class="danger">ADC hat sich zurückgesetzt</p>
+
+        <p>Samplerate: {{ state.verboseSamplerate }}</p>
+        <p>Filter: {{ state.verboseFilter }}</p>
+        <p>PGA: {{ state.verbosePGA }}</p>
+
+        <h3>Kalibration</h3>
+        <p>Offset: {{ state.calibrationOffset }} {{ state.calibrationOffsetDiff }}</p>
+        <p>Scale: {{ state.calibrationScale }} {{ state.calibrationScaleDiff }}</p>
+
+        <div *ngIf="state.measurementCount > 0">
+            <h3>{{ state.measurementCount === 1 ? 'Eine Messung' : (state.measurementCount + ' Messungen') }}</h3>
+            <div *ngFor="let m of state.viewMeasurements">
+                <p ngClass="{'strong': m.enabled}">Id: {{ m.id }} ({{ m.enabled ? 'aktiviert' : 'deaktiviert' }})</p>
+                <p>Eingänge: {{ m.pos }} {{ m.neg }}</p>
+                <p>Mittlung: {{ m.averaging }}</p>
+                <p>DFT {{ m.fftEnabled ? 'aktiviert' : 'deaktiviert' }}</p>
+                <p>Dft Länge: {{ m.fftLength }}</p>
+                <p>DFT Fensterfuntion: {{ m.verboseFftWindow }}</p>
+            </div>
+        </div>
+    </div>
+</div>

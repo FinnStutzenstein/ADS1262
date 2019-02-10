@@ -15,7 +15,7 @@ window_reverse_lookup = {
 }
 started_reverse_lookup = ['Idle', 'Running', 'Oneshot', 'Calibrating']
 
-adc_state_size = 29
+adc_state_size = 21
 measurement_state_size = 9
 
 
@@ -91,7 +91,7 @@ class State:
 
         # get all main and non optional data from the state.
         (flags, sr_filter, self.pga, self.v_ref, v_ref_inputs, self.calibration_offset,
-         self.calibration_scale, self.measurement_count) = struct.unpack('<BBBQBqQB', state_bytes[0:adc_state_size])
+         self.calibration_scale, self.measurement_count) = struct.unpack('<BBBQBiIB', state_bytes[0:adc_state_size])
 
         # parse the data.
         self.started = started_reverse_lookup[int(flags & 0x03)]

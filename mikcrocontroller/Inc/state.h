@@ -38,8 +38,8 @@ typedef struct __packed {
 	uint8_t pga;
 	uint64_t v_ref_tennanovolt;
 	uint8_t v_ref_inputs;
-	int64_t calibration_offset;
-	uint64_t calibration_scale;
+	int32_t calibration_offset;
+	uint32_t calibration_scale;
 	uint8_t measurement_count;
 } adc_state_t;
 

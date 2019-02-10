@@ -1,8 +1,25 @@
-<h1>
-    Welcome to {{ title }}!
-</h1>
+<div id="container">
+    <div id="header">
+        <h2>ADS1262 FFT interface</h2>
+    </div>
 
-<button type="button" (click)="connect()">
-    Connect
-</button>
-<br>
+    <div id="status">
+        <app-connect></app-connect>
+        <hr>
+        <app-state></app-state>
+        <hr>
+        <app-control></app-control>
+        <hr>
+        <button type="button" (click)="sendOk()">Send OK</button>
+        <button type="button" (click)="sendError()">Send Error</button>
+        <button type="button" (click)="sendStatus()">Send Status</button>
+    </div>
+
+    <div id="content">
+        <app-fft></app-fft>
+    </div>
+
+    <div id="debug">
+        <app-debug></app-debug>
+    </div>
+</div>

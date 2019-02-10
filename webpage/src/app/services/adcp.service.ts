@@ -6,7 +6,7 @@ import { StructService } from './struct.service';
 const ADCPTimeout = 5000;
 
 export type StatusCode = number;
-const ADCPStatuscodes: { [code: number]: string } = {
+export const ADCPStatuscodes: { [code: number]: string } = {
     0x00: 'RESPONSE_OK',
     0x01: 'RESPONSE_MESSAGE_TOO_SHORT',
     0x02: 'RESPONSE_INVALID_PREFIX',
@@ -21,18 +21,31 @@ const ADCPStatuscodes: { [code: number]: string } = {
     0x0b: 'RESPONSE_NO_ENABLED_MEASUREMENT',
     0x0d: 'RESPONSE_FFT_NO_MEMORY',
     0x0e: 'RESPONSE_FFT_INVALID_LENGTH',
-    0x0f: 'RESPONSE_FFT_INVALID_WINDOW'
+    0x0f: 'RESPONSE_FFT_INVALID_WINDOW',
+    0x10: 'RESPONSE_ADC_RESET',
+    0x11: 'RESPONSE_CALIBRATION_TIMEOUT',
+    0x12: 'RESPONSE_SOMETHING_IS_NOT_GOOD',
+    0x13: 'RESPONSE_WRONG_REFERENCE_PINS',
+    0x14: 'RESPONSE_MESSAGE_TOO_LONG',
+    0x15: 'RESPONSE_MESSAGE_TYPE_NOT_SUPPORTED'
 };
 
-type ADCPPrefixCommand = [number, number];
+export type ADCPPrefixCommand = [number, number];
 
-const ADCP: {
+export const ADCP: {
     [prefix: string]: {
         [command: string]: ADCPPrefixCommand;
     };
 } = {
     connection: {
         setType: [0x10, 0x00]
+    },
+    measurement: {
+        start: [0x12, 0x01],
+        stop: [0x12, 0x02]
+    },
+    adc: {
+        updateState: [0x13, 0x07]
     }
 };
 
@@ -40,38 +53,18 @@ const ADCP: {
     providedIn: 'root'
 })
 export class ADCPService {
-    public constructor(private ADCPRepService: ADCPRepresentationService, private structService: StructService) {
-        this.ADCPRepService.getConnectionEventObservable().subscribe(() => {
-            this.setConnectionType([PacketType.Debug, PacketType.Status]).then(
-                response => {
-                    console.log('RESP', ADCPStatuscodes[response]);
-                },
-                error => {
-                    console.log(error);
-                }
-            );
-        });
-    }
+    public constructor(private ADCPRepService: ADCPRepresentationService, private structService: StructService) {}
 
-    public async setConnectionType(types: PacketType[]): Promise<StatusCode> {
-        console.log('set connection type', types);
-        let allTypes = 0;
-        types.forEach(type => {
-            allTypes = allTypes | type;
-        });
-        this.sendPacket(ADCP.connection.setType, new Uint8Array([allTypes]).buffer as ArrayBuffer);
-        return this.getStatusCodeResponse();
-    }
+    public async getStatusCodeResponse(): Promise<void> {
+        const resp = await this.getResponse();
+        const code = this.processStatuscode(resp);
 
-    private async getStatusCodeResponse(): Promise<StatusCode> {
-        const view = new DataView(await this.getResponse());
-        if (view.byteLength < 1) {
-            throw new Error('No bytes returned');
+        if (code !== 0) {
+            throw new Error(ADCPStatuscodes[code]);
         }
-        return view.getUint8(0);
     }
 
-    private async getResponse(): Promise<ArrayBuffer> {
+    public async getResponse(): Promise<ArrayBuffer> {
         return await this.ADCPRepService.getPacketObservable(PacketType.Response)
             .pipe(
                 take(1),
@@ -80,7 +73,18 @@ export class ADCPService {
             .toPromise();
     }
 
-    private sendPacket(prefixCommand: ADCPPrefixCommand, data: ArrayBuffer): void {
+    public processStatuscode(buffer: ArrayBuffer): number {
+        if (buffer.byteLength < 1) {
+            throw new Error('No bytes returned');
+        }
+
+        return this.structService.fromBuffer('B', buffer)[0] as number;
+    }
+
+    public sendPacket(prefixCommand: ADCPPrefixCommand, data?: ArrayBuffer): void {
+        if (!data) {
+            data = new ArrayBuffer(0);
+        }
         this.ADCPRepService.send(this.structService.toBuffer('BBA', prefixCommand[0], prefixCommand[1], data));
     }
 }
