@@ -2,12 +2,12 @@
     <p>Verbindungstatus: {{ connected ? ('Verbunden zu ' + connectedIpAddress) : 'Getrennt' }}</p>
     <div *ngIf="!connected">
         <input #ipaddress/>
-        <button type="button" (click)="connect()">
+        <button type="button" class="green" (click)="connect()">
             Verbinden
         </button>
     </div>
     <div *ngIf="connected">
-        <button type="button" (click)="disconnect()">
+        <button type="button" class="red" (click)="disconnect()">
             Verbindung trennen
         </button>
     </div>

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 
 import { Chart } from 'angular-highcharts';
 
-import { FFTUpdate, FFTService } from 'src/app/services/fft.service';
+import { PSDUpdate, PSDService } from 'src/app/services/psd.service';
 
 @Component({
     selector: 'app-fft',
@@ -18,7 +18,10 @@ export class FFTComponent implements OnInit {
     public averagingCount = 0;
     public psdAveraging: number[];
 
-    public constructor(private fftService: FFTService) {
+    private redraw = true;
+    private redrawTimeout: any = null;
+
+    public constructor(private fftService: PSDService) {
         this.chart = new Chart({
             chart: {
                 type: 'line'
@@ -39,14 +42,14 @@ export class FFTComponent implements OnInit {
             yAxis: [
                 {
                     title: {
-                        text: 'Test'
+                        text: 'v^2s'
                     }
                 }
             ],
             xAxis: [
                 {
                     title: {
-                        text: 'X Achse'
+                        text: 'Frequenz'
                     },
                     type: 'logarithmic'
                 }
@@ -55,10 +58,10 @@ export class FFTComponent implements OnInit {
     }
 
     public ngOnInit(): void {
-        this.fftService.getFFTObservalbe().subscribe(update => this.update(update));
+        this.fftService.getPSDObservalbe().subscribe(update => this.update(update));
     }
 
-    public update(update: FFTUpdate): void {
+    public update(update: PSDUpdate): void {
         if (this.wss !== update.wss || this.N !== update.N) {
             this.reset();
         }
@@ -83,12 +86,25 @@ export class FFTComponent implements OnInit {
         });
 
         this.chart.ref$.subscribe(chart => {
-            chart.series[0].setData(points, true);
+            chart.series[0].setData(points, this.redraw);
+            if (this.redraw) {
+                this.lockRedraw();
+            }
         });
 
         this.fRes = update.fRes;
         this.N = update.N;
         this.wss = update.wss;
+    }
+
+    private lockRedraw(): void {
+        this.redraw = false;
+        if (!this.redrawTimeout) {
+            this.redrawTimeout = setTimeout(() => {
+                this.redraw = true;
+                this.redrawTimeout = null;
+            }, 1000);
+        }
     }
 
     public reset(): void {

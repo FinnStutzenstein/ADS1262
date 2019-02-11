@@ -1,25 +1,53 @@
 import { Injectable } from '@angular/core';
 
 import { Subject, Observable } from 'rxjs';
+
 import { ADCPRepresentationService, PacketType } from './adcp-representation.service';
 import { StructService } from './struct.service';
 import { appendBuffers } from './arraybuffer-helper';
 
-export interface FFTUpdate {
+/**
+ * Encapsulates all information about an PSD update.
+ */
+export interface PSDUpdate {
     psd: number[];
     N: number;
     wss: number;
     fRes: number;
+
+    /**
+     * The measurement id.
+     */
+    id: number;
 }
 
+/**
+ * Takes care of recieving FFT messages. Converts them to the PSD. With `getPSDObservable` you can
+ * get full updates of new PSD data.
+ * Currently works only for one measurement. The first FFT message recieved determinates the id.
+ */
 @Injectable({
     providedIn: 'root'
 })
-export class FFTService {
-    private fftSubject = new Subject<FFTUpdate>();
+export class PSDService {
+    /**
+     * The subject with the PSD data
+     */
+    private psdSubject = new Subject<PSDUpdate>();
 
+    /**
+     * The one measurement to listen to.
+     */
     private id: number;
+
+    /**
+     * Saves the last frame number recieved.
+     */
     private lastFrameNumber: number;
+
+    /**
+     * Accumulates the data, if the FFT message is fragmented.
+     */
     private dataBuffer: ArrayBuffer;
 
     public constructor(private adcpRepService: ADCPRepresentationService, private structService: StructService) {
@@ -27,10 +55,16 @@ export class FFTService {
         this.adcpRepService.getPacketObservable(PacketType.FFT).subscribe(buffer => this.rawInput(buffer));
     }
 
-    public getFFTObservalbe(): Observable<FFTUpdate> {
-        return this.fftSubject.asObservable();
+    public getPSDObservalbe(): Observable<PSDUpdate> {
+        return this.psdSubject.asObservable();
     }
 
+    /**
+     * Raw input of an fft message. Unpacks the metainfo and accumulates the data.
+     * If a full message is collected, passes the data to `processPacketData`.
+     *
+     * @param buffer The fft message
+     */
     private rawInput(buffer: ArrayBuffer): void {
         const metadatasize = 21;
         if (buffer.byteLength < metadatasize) {
@@ -66,26 +100,56 @@ export class FFTService {
         }
         this.lastFrameNumber = frameNumber;
 
+        this.dataBuffer = appendBuffers(this.dataBuffer, metainfos[7] as ArrayBuffer);
         if (frameNumber + 1 === frameCount) {
             // OK. finished. Process data.
             this.processPacketData(this.dataBuffer, N, wss, resolution);
             this.reset();
-        } else {
-            this.dataBuffer = appendBuffers(this.dataBuffer, metainfos[7] as ArrayBuffer);
         }
     }
 
+    /**
+     * Resets the aquiring of the current package.
+     */
     private reset() {
         this.lastFrameNumber = -1;
         this.dataBuffer = new ArrayBuffer(0);
     }
 
+    /**
+     * Processes the payload of a full fft message.
+     *
+     * @param buffer Payload
+     * @param N
+     * @param wss
+     * @param fRes
+     */
     private processPacketData(buffer: ArrayBuffer, N: number, wss: number, fRes: number): void {
-        // TODO
-        this.input([], N, wss, fRes);
+        if (buffer.byteLength % 8 !== 0) {
+            throw new Error("ByteLength of samples is not a multiple of 8!");
+        }
+        if (buffer.byteLength !== (N * 4)) {
+            throw new Error("Must recieve " + N + " floats, got " + buffer.byteLength + " bytes");
+        }
+
+        const rawFFTData: number[] = [];
+        const view = new DataView(buffer);
+        for (let i = 0; i < buffer.byteLength; i += 4) {
+            rawFFTData.push(view.getFloat32(i, true));
+        }
+
+        this.calcPSD(rawFFTData, N, wss, fRes);
     }
 
-    private input(rawFFTData: number[], N: number, wss: number, fRes: number) {
+    /**
+     * Calculates the PSD of the recieved raw FFT data. Publishes the result via the psdSubject.
+     *
+     * @param rawFFTData The raw data of `N` numbers representing N/2 complex numbers.
+     * @param N
+     * @param wss
+     * @param fRes
+     */
+    private calcPSD(rawFFTData: number[], N: number, wss: number, fRes: number) {
         const NHalf = N / 2;
         const fft = [];
 
@@ -105,11 +169,12 @@ export class FFTService {
 
         psd = psd.map(val => val + Math.floor(Math.random() * 5));
 
-        this.fftSubject.next({
+        this.psdSubject.next({
             psd: psd,
             N: N,
             wss: wss,
-            fRes: fRes
+            fRes: fRes,
+            id: this.id
         });
     }
 }

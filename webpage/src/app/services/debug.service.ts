@@ -3,6 +3,9 @@ import { PacketType, ADCPRepresentationService } from './adcp-representation.ser
 import { StructService } from './struct.service';
 import { Subject, Observable } from 'rxjs';
 
+/**
+ * Cares about debug messages. Pases the ascii text and publish it.
+ */
 @Injectable({
     providedIn: 'root'
 })
@@ -11,6 +14,12 @@ export class DebugService {
 
     private decoder = new TextDecoder('ascii');
 
+    /**
+     * Subscribes to debug messages.
+     *
+     * @param ADCPRepService
+     * @param structService
+     */
     public constructor(private ADCPRepService: ADCPRepresentationService, private structService: StructService) {
         this.ADCPRepService.getPacketObservable(PacketType.Debug).subscribe((msg: ArrayBuffer) => {
             const text = this.decoder.decode(msg);
@@ -22,6 +31,9 @@ export class DebugService {
         });
     }
 
+    /**
+     * @returns the obserable for each line of the debug text stream.
+     */
     public getDebugMessageLineObservable(): Observable<string> {
         return this.debugMessageLineSubject.asObservable();
     }

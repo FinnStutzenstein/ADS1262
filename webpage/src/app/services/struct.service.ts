@@ -1,18 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as bigInt from 'big-integer';
 
-const dataviewSymbolMap: { [formatsymbol: string]: [keyof DataView, number] } = {
-    b: ['getInt8', 1],
-    B: ['getUint8', 1],
-    h: ['getInt16', 2],
-    H: ['getUint16', 2],
-    i: ['getInt32', 4],
-    I: ['getUint32', 4],
-    //'q': <not supported>
-    //'Q': <not supported> -.-
-    f: ['getFloat32', 4]
-};
-
 const sizeMap: { [formatsymbol: string]: number } = {
     b: 1,
     B: 1,
@@ -26,7 +14,17 @@ const sizeMap: { [formatsymbol: string]: number } = {
 };
 
 /**
- * Always little endian
+ * Provides functionality to put data into an ArrayBuffer and get data from
+ * a buffer. Always in little endian.
+ *
+ * `toBuffer` puts all given data together to an ArrayBuffer. The types for the format are:
+ * b (int8), B (uint8), h (int16), H (uint16), i (int32), I (uint32), q (int64), Q (uint64),
+ * A (ArrayBuffer), f (32 bit float).
+ * All corresponsing TypeScript types are number, except for the ArrayBuffer and q/Q. These are BitIntegers.
+ *
+ * `fromBuffer` Does this in reverse, except that an `A` is just allowed at the end to catch all remaining bytes.
+ *
+ * The static `printBuffer` method is nice for debugging purposes.
  */
 @Injectable({
     providedIn: 'root'
@@ -34,6 +32,11 @@ const sizeMap: { [formatsymbol: string]: number } = {
 export class StructService {
     public constructor() {}
 
+    /**
+     * Prints an arraybuffer.
+     *
+     * @param buffer The buffer
+     */
     public static printBuffer(buffer: ArrayBuffer): void {
         const array = new Uint8Array(buffer);
         const blocksize = 8;
@@ -86,6 +89,7 @@ export class StructService {
             }
         }
 
+        // Construct the buffer.
         const buffer = new ArrayBuffer(size);
         const view = new DataView(buffer);
         let pos = 0;
@@ -166,11 +170,6 @@ export class StructService {
         return buffer;
     }
 
-    /**
-     * A just as catch-all at the back
-     * @param format
-     * @param buffer
-     */
     public fromBuffer(format: string, buffer: ArrayBuffer): (number | bigInt.BigInteger | ArrayBuffer)[] {
         const result: (number | bigInt.BigInteger | ArrayBuffer)[] = [];
 

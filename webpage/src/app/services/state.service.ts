@@ -2,11 +2,15 @@ import { Injectable } from '@angular/core';
 
 import { Observable, BehaviorSubject } from 'rxjs';
 
-import { ADCPRepresentationService } from './adcp-representation.service';
+import { ADCPRepresentationService, PacketType } from './adcp-representation.service';
 import { StructService } from './struct.service';
 import { State, MeasurementState } from '../models/state';
 import { WebsocketService } from './websocket.service';
 
+/**
+ * Takes care about recieving state updates. Parses them and publish them via
+ * `getStateObservable`. Query the current state via `getCurrentState`.
+ */
 @Injectable({
     providedIn: 'root'
 })
@@ -18,15 +22,17 @@ export class StateService {
         private structService: StructService,
         private websocketService: WebsocketService
     ) {
-        /*this.ADCPRepService.getPacketObservable(PacketType.Debug).subscribe((msg: ArrayBuffer) => {
+        this.ADCPRepService.getPacketObservable(PacketType.Status).subscribe((msg: ArrayBuffer) => {
             try {
+                console.log("got statusupdate");
                 const state = this.constructState(msg);
                 this.updateState(state);
             } catch (e) {
                 console.log("could not parse state.");
             }
-        });*/
+        });
 
+        /*
         //                   |       |       |       |       |       |       |       |
         const bytesString = '1C04FF00e6b2000e0000000005a80000031c00410101130100000000f000';
 
@@ -36,17 +42,27 @@ export class StateService {
         }
 
         const state = this.constructState(view.buffer as ArrayBuffer);
-        //this.updateState(state);
+        //this.updateState(state);*/
 
         this.websocketService.getCloseEventObservable().subscribe(() => {
             this.updateState(null);
         });
     }
 
+    /**
+     * Sets the given state as the current state.
+     *
+     * @param state The new state.
+     */
     public updateState(state: State | null): void {
         this.statusSubject.next(state);
     }
 
+    /**
+     * Build the state from the given bytes.
+     *
+     * @param bytes The bytes.
+     */
     public constructState(bytes: ArrayBuffer): State {
         const adcStateSize = 21;
         if (bytes.byteLength < adcStateSize) {
@@ -56,6 +72,7 @@ export class StateService {
         const result = this.structService.fromBuffer('BBBQBiIB', bytes.slice(0, adcStateSize));
         const state = new State();
 
+        // Parse the state.
         const status = result[0] as number;
         state.started = status & 0x03;
         state.internalReference = !!(status & 0x04);
@@ -74,7 +91,6 @@ export class StateService {
 
         state.calibrationOffset = result[5] as number;
         state.calibrationScale = result[6] as number;
-
         const measurementCount = result[7] as number;
 
         // check for length of all measurements
@@ -83,6 +99,7 @@ export class StateService {
         if (bytes.byteLength < expectedLength) {
             throw new Error("The server didn't send enough data");
         }
+        // Create measurement states.
         for (let i = adcStateSize; i < expectedLength; i += measurementStateSize) {
             const m = this.constructMeasurementState(bytes.slice(i, i + measurementStateSize));
             state.measurements[m.id] = m;
@@ -91,6 +108,11 @@ export class StateService {
         return state;
     }
 
+    /**
+     * Builds a measurementState from the given bytes.
+     *
+     * @param bytes The measurement state bytes.
+     */
     private constructMeasurementState(bytes: ArrayBuffer): MeasurementState {
         const result = this.structService.fromBuffer('BBBHBHB', bytes);
         const measurementState = new MeasurementState();
@@ -109,11 +131,17 @@ export class StateService {
         return measurementState;
     }
 
-    public getCurrentStatus(): State {
+    /**
+     * @return the current state or null, of there is no state.
+     */
+    public getCurrentState(): State | null {
         return this.statusSubject.getValue();
     }
 
-    public getStateObservable(): Observable<State> {
+    /**
+     * @returns the state observable.
+     */
+    public getStateObservable(): Observable<State | null> {
         return this.statusSubject.asObservable();
     }
 }

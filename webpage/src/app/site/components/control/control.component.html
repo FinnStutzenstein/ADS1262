@@ -1,9 +1,11 @@
 <div>
-    <p class ="gray" *ngIf="started === null">Kein aktueller Status vorhanden</p>
-    <button [disabled]="started !== Started.Idle" type="button" (click)="start()">
-        Messung starten
-    </button>
-    <button [disabled]="started !== Started.Running" type="button" (click)="stop()">
-        Messung stoppen
-    </button>
+    <p class="gray" *ngIf="started === null">Kein aktueller Status vorhanden</p>
+    <div class="center">
+        <button [disabled]="started !== Started.Idle" type="button" class="green" (click)="start()">
+            Messung starten
+        </button>
+        <button [disabled]="started !== Started.Running" type="button" class="red" (click)="stop()">
+            Messung stoppen
+        </button>
+    </div>
 </div>

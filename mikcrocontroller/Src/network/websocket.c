@@ -225,10 +225,10 @@ static uint8_t handle_frame(connection_t* connection, uint8_t* data, uint16_t le
  */
 uint8_t* websocket_write_header(uint8_t* payload, uint16_t payload_length, uint16_t* package_length) {
 	uint8_t* package_begin;
-	if (payload_length > 126) { // Yes.
+	if (payload_length > 125) { // 126/127 are special values. so we need extended length
 		package_begin = payload - 4;
 		package_begin[0] = WEBSOCKET_BINARY_PACKAGE;
-		package_begin[1] = 127; // Enable extended length
+		package_begin[1] = 126; // Enable extended length (16 bits; 127 is 64 bits)
 		// Now follows the 16 bit extended payload length in network byte order...
 		package_begin[2] = (payload_length & 0xFF00) >> 8;
 		package_begin[3] = payload_length & 0xFF;

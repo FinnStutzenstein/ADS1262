@@ -169,7 +169,7 @@ class DataThread(threading.Thread):
     def input(self, buff):
         id, frame_count, frame_number, length, timestamp, resolution, wss = struct.unpack('<BBBHQff', buff[0:self.metadata_size])
 
-        # print("got data: frame {}/{}".format(frame_number+1, frame_count))
+        print("got data: frame {}/{}".format(frame_number+1, frame_count))
         if self.last_frame_number+1 != frame_number:
             print("Drop")
             self.reset_frame_data()

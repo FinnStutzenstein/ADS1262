@@ -11,7 +11,7 @@ export class StateComponent {
     public state: State;
 
     public constructor(private stateService: StateService) {
-        this.state = this.stateService.getCurrentStatus();
+        this.state = this.stateService.getCurrentState();
         this.stateService.getStateObservable().subscribe(state => (this.state = state));
     }
 }

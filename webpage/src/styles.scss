@@ -2,6 +2,7 @@ html, body {
     min-height: 100vh;
     margin: 0;
     padding: 0;
+    font-family: Arial;
 }
 
 .gray {
@@ -11,4 +12,67 @@ html, body {
 p {
     margin: 0;
     line-height: 1.25em;
+}
+
+input {
+    padding: 3px;
+    margin: 5px;
+}
+
+button {
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 5px;
+	display: inline-block;
+	cursor: pointer;
+	color: #ffffff;
+	padding: 4px 8px;
+    text-decoration: none;
+    margin: 5px;
+    font-size: 15px;
+
+    &:active {
+	    position:relative;
+        top:1px;
+    }
+
+    &[disabled] {
+        color: black;
+        background-color: lightgrey;
+        border-color: grey;
+        box-shadow: none;
+        -moz-box-shadow: none;
+        -webkit-box-shadow: none;
+        cursor: not-allowed;
+
+        &:hover, &:active {
+            background-color: lightgrey;
+        }
+    }
+}
+
+.green {
+    -moz-box-shadow: 1px 1px 3px 0px #3dc21b;
+	-webkit-box-shadow: 1px 1px 3px 0px #3dc21b;
+	box-shadow: 1px 1px 3px 0px #3dc21b;
+    background-color:#44c767;
+    border:1px solid #18ab29;
+    text-shadow:0px 1px 0px #2f6627;
+
+    &:hover {
+        background-color:#5cbf2a;
+    }
+}
+
+.red {
+    -moz-box-shadow: 1px 1px 3px 0px #cf866c;
+	-webkit-box-shadow: 1px 1px 3px 0px #cf866c;
+	box-shadow: 1px 1px 3px 0px #cf866c;
+    background-color:#d0451b;
+    border:1px solid #942911;
+    text-shadow:0px 1px 0px #854629;
+
+    &:hover {
+        background-color:#bc3315;
+    }
 }

@@ -16,16 +16,12 @@ export class WebsocketService {
     public constructor(private zone: NgZone) {}
 
     public connect(host: string): void {
-        this.connectionEvent.emit();
-        return;
-
         this.websocket = new WebSocket(`ws://${host}/ws`);
         this.websocket.binaryType = 'arraybuffer';
 
         // connection established. If this connect attept was a retry,
         // The error notice will be removed and the reconnectSubject is published.
         this.websocket.onopen = (event: Event) => {
-            console.log('open', event);
             this.zone.run(() => {
                 this.connectionEvent.emit();
             });
@@ -38,7 +34,7 @@ export class WebsocketService {
         };
 
         this.websocket.onclose = (event: CloseEvent) => {
-            console.log('close', event);
+            console.log("close", event);
             this.zone.run(() => {
                 this.websocket = null;
                 this.closeEvent.emit();
@@ -51,9 +47,6 @@ export class WebsocketService {
             this.websocket.close();
             this.websocket = null;
         }
-
-        // TODO: remove
-        this.closeEvent.emit();
     }
 
     public getConnectionEventObservable(): Observable<void> {
@@ -69,11 +62,10 @@ export class WebsocketService {
     }
 
     public send(data: ArrayBuffer): void {
-        /*if (!this.websocket) {
+        if (!this.websocket) {
             throw new Error('WS is not open');
         }
 
-        this.websocket.send(data);*/
-        console.log('send', data);
+        this.websocket.send(data);
     }
 }

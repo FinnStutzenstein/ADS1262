@@ -1,13 +1,9 @@
 import { Injectable } from '@angular/core';
 
-import { Subject } from 'rxjs';
-
-import { ADCPRepresentationService, PacketType } from './adcp-representation.service';
-import { take } from 'rxjs/operators';
-import { StructService } from './struct.service';
 import { ADCPService, ADCP, ADCPStatuscodes } from './adcp.service';
 import { State } from '../models/state';
 import { StateService } from './state.service';
+import { PacketType } from './adcp-representation.service';
 
 @Injectable({
     providedIn: 'root'
