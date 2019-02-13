@@ -87,7 +87,7 @@ export class PSDService {
         const resolution = metainfos[5] as number;
         const wss = metainfos[6] as number;
 
-        console.log('got frame ' + (frameNumber + 1) + '/' + frameCount);
+        //console.log('got frame ' + (frameNumber + 1) + '/' + frameCount);
 
         if (this.lastFrameNumber + 1 !== frameNumber) {
             console.log('Drop FFT Frame');
@@ -166,8 +166,6 @@ export class PSDService {
         psd[0] = psd[0] / 2.0;
         psd[NHalf] = psd[NHalf] / 2.0;
         psd = psd.map(val => 10 * Math.log10(val));
-
-        psd = psd.map(val => val + Math.floor(Math.random() * 5));
 
         this.psdSubject.next({
             psd: psd,

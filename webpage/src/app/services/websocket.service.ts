@@ -1,20 +1,41 @@
 import { Injectable, NgZone, EventEmitter } from '@angular/core';
+
 import { Subject, Observable } from 'rxjs';
 
+/**
+ * This service establishes and manages the websocket connection.
+ */
 @Injectable({
     providedIn: 'root'
 })
 export class WebsocketService {
+    /**
+     * Subject for incomming messages
+     */
     private messageSubject: Subject<ArrayBuffer> = new Subject();
 
+    /**
+     * The websocket object.
+     */
     private websocket = null;
 
+    /**
+     * Event fires, when the connection is established.
+     */
     private readonly connectionEvent = new EventEmitter<void>();
 
+    /**
+     * Event fires, when the connection is closed.
+     */
     private readonly closeEvent = new EventEmitter<void>();
 
     public constructor(private zone: NgZone) {}
 
+    /**
+     * Connects to the given host.
+     *
+     * @param host The host to connect to.
+     */
     public connect(host: string): void {
         this.websocket = new WebSocket(`ws://${host}/ws`);
         this.websocket.binaryType = 'arraybuffer';
@@ -34,7 +55,6 @@ export class WebsocketService {
         };
 
         this.websocket.onclose = (event: CloseEvent) => {
-            console.log("close", event);
             this.zone.run(() => {
                 this.websocket = null;
                 this.closeEvent.emit();
@@ -42,6 +62,9 @@ export class WebsocketService {
         };
     }
 
+    /**
+     * Disconnects the active connection.
+     */
     public disconnect() {
         if (this.websocket) {
             this.websocket.close();

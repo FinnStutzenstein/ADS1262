@@ -32,18 +32,6 @@ export class StateService {
             }
         });
 
-        /*
-        //                   |       |       |       |       |       |       |       |
-        const bytesString = '1C04FF00e6b2000e0000000005a80000031c00410101130100000000f000';
-
-        const view = new Uint8Array(bytesString.length / 2);
-        for (let i = 0; i < bytesString.length; i += 2) {
-            view[i / 2] = parseInt(bytesString.substring(i, i + 2), 16);
-        }
-
-        const state = this.constructState(view.buffer as ArrayBuffer);
-        //this.updateState(state);*/
-
         this.websocketService.getCloseEventObservable().subscribe(() => {
             this.updateState(null);
         });

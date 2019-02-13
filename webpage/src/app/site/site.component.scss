@@ -1,7 +1,7 @@
 #container {
     display: grid;
     min-height: calc(100vh - 20px);
-    grid-template-rows: 90px minmax(max-content, minmax(0, 1fr)) 20%;
+    grid-template-rows: 90px minmax(max-content, 1fr) 20%;
     grid-template-columns: 1fr 3fr;
     grid-gap: 10px;
     padding: 10px;
@@ -18,7 +18,7 @@
     grid-column-start: 1;
     grid-column-end: 3;
     grid-row-start: 1;
-    grid-row-end: 1;
+    grid-row-end: 2;
     border-bottom: 1px #888;
 }
 

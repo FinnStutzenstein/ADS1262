@@ -32,23 +32,6 @@ export const ADCPStatuscodes: { [code: number]: string } = {
 
 export type ADCPPrefixCommand = [number, number];
 
-export const ADCP: {
-    [prefix: string]: {
-        [command: string]: ADCPPrefixCommand;
-    };
-} = {
-    connection: {
-        setType: [0x10, 0x00]
-    },
-    measurement: {
-        start: [0x12, 0x01],
-        stop: [0x12, 0x02]
-    },
-    adc: {
-        updateState: [0x13, 0x07]
-    }
-};
-
 @Injectable({
     providedIn: 'root'
 })
