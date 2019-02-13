@@ -20,8 +20,8 @@
         <p>PGA: {{ state.verbosePGA }}</p>
 
         <h3>Kalibration</h3>
-        <p>Offset: {{ state.calibrationOffset }} {{ state.calibrationOffsetDiff }}</p>
-        <p>Scale: {{ state.calibrationScale }} {{ state.calibrationScaleDiff }}</p>
+        <p>Offset: {{ state.calibrationOffset }} ({{ state.calibrationOffsetDiff }})</p>
+        <p>Scale: {{ state.calibrationScale }} ({{ state.calibrationScaleDiff }})</p>
 
         <div *ngIf="state.measurementCount > 0">
             <h3>{{ state.measurementCount === 1 ? 'Eine Messung' : (state.measurementCount + ' Messungen') }}</h3>

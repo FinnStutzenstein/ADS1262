@@ -275,7 +275,7 @@ protocol_error_t measure_start() {
 	// Prepare the first measurement and start the ADC
 	clear_slow_connection_flag();
 	fft_prepare_instances(fft_instances, fft_instance_index);
-	measurement_watchdog_start(enabled_measurement_count);
+	measurement_watchdog_start();
 	ADS1262_set_input_mux(measurements[current_measurement_index]->adc_input_multiplexer);
 	setup_valuebuffer();
 	measure_state = MEASURE_STATE_RUNNING;

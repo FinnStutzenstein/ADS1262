@@ -76,6 +76,8 @@ void measurement_watchdog_tick() {
 
 	wd_counter++;
 	if (wd_counter > wd_max_counter) {
+		printf("Watchdog!\n");
+		wd_started = 0;
 		set_ADC_reset_flag();
 		measure_stop();
 		update_adc_state(1);
@@ -96,18 +98,16 @@ inline void measurement_watchdog_reset() {
  * Starts the watchdog. `enabled_measurements` should give the
  * amount of current measurements. Sets up all needed variables.
  */
-void measurement_watchdog_start(uint8_t enabled_measurements) {
+void measurement_watchdog_start() {
 	wd_max_counter = 1;
 	// All samplerates (incl. their conversion latency with enabled multiplexing)
 	// are fast enough to produce samples within 1 second. Just with 5 and 2.5 SPS
-	// and multiplexing, we want to give the watchdog more time.
-	if (enabled_measurements > 1) {
-		uint8_t samplerate = ADS1262_get_samplerate();
-		if (ADS1262_RATE_5 == samplerate) {
-			wd_max_counter = 2;
-		} else if (ADS1262_RATE_2_5 == samplerate) {
-			wd_max_counter = 3;
-		}
+	// we want to give the watchdog more time.
+	uint8_t samplerate = ADS1262_get_samplerate();
+	if (ADS1262_RATE_5 == samplerate) {
+		wd_max_counter = 2;
+	} else if (ADS1262_RATE_2_5 == samplerate) {
+		wd_max_counter = 3;
 	}
 	wd_counter = 0;
 	wd_start_flag = 1;

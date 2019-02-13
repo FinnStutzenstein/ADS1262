@@ -108,7 +108,7 @@ class Main():
                       self.value_to_bytes(ref_neg_pin_index, 'u8'))
             self.send_command('adc reference set external', arguments)
 
-        if pga == 'bypass':
+        if pga == 'bypassed':
             self.send_command('adc pga bypass')
         else:
             pga_index = self.choices_pga.index(pga)
@@ -148,7 +148,7 @@ class Main():
             return
         print('This may take up to {} seconds...'.format(timeout))
 
-        # Do sclae calibration
+        # Do scale calibration
         inputs = self.value_to_bytes(pos, 'u8') + self.value_to_bytes(neg, 'u8')
         resp = self.send_command('calibrationsequence scale', inputs, timeout=timeout)
         scale = struct.unpack('<I', resp[1:5])[0]
@@ -221,8 +221,8 @@ class Main():
             if len(resp) < 1:
                 raise Exception('The server did not send any data.')
             if resp[0] != 0:
-                raise Exception('Status code not ok: {}'.format(STATUSCODES.get(
-                    resp[0], 'Unknown status code {}'.format(int(resp[0])))))
+                raise Exception('Status code not ok: {} (command {})'.format(STATUSCODES.get(
+                    resp[0], 'Unknown status code {}'.format(int(resp[0]))), command_name))
             return resp
         else:
             raise TimeoutException()

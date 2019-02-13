@@ -142,7 +142,7 @@ class Main:
             # Split the arguments from the command.
             args = inp[len(command.command_name):].strip()
             if isinstance(command, BashCommand):
-                command.handle(args, self)
+                command.handle(main)
             else:
                 # This case is network related.
                 try:
@@ -214,4 +214,10 @@ def main(stdscr):
 
 
 if __name__ == '__main__':
-    curses.wrapper(main)
+    try:
+        curses.wrapper(main)
+    except Exception as e:
+        curses.echo()
+        curses.nocbreak()
+        curses.endwin()
+        raise e

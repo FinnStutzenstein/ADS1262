@@ -38,9 +38,9 @@ class CommandManager:
                     commands.append(command_cls(prefix, command, command_dict, self.main))
 
         # add dummy commands, so the autocompletion works there.
-        commands.append(QuitCommand('quit'))  # noqa
-        commands.append(HelpCommand('help'))  # noqa
-        commands.append(ListCommand('list'))  # noqa
+        commands.append(QuitCommand('quit', self.main))  # noqa
+        commands.append(HelpCommand('help', self.main))  # noqa
+        commands.append(ListCommand('list', self.main))  # noqa
         return commands
 
     def command_name_to_class_name(self, command_name):

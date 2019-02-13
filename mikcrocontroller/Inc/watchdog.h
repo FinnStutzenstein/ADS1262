@@ -17,7 +17,7 @@ extern "C" {
 void measurement_watchdog_init();
 void measurement_watchdog_tick();
 void measurement_watchdog_reset();
-void measurement_watchdog_start(uint8_t enabled_measurements);
+void measurement_watchdog_start();
 void measurement_watchdog_stop();
 
 #ifdef __cplusplus

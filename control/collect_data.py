@@ -48,19 +48,32 @@ class DataThread(threading.Thread):
         return True
 
     def recieve(self):
+        self.connection.settimeout(3)
         buff = b''
         # Collect, while we need samples.
         while self.collect_more_samples():
             # Get one package
-            if len(buff) < 3:
-                buff += self.connection.recv(3)
+            while len(buff) < 3 and self.collect_more_samples():
+                try:
+                    buff += self.connection.recv(3)
+                except socket.error as e:
+                    pass  # timeout..
+
+            if not self.collect_more_samples():
+                break
 
             package_type, package_len = struct.unpack('<BH', buff[0:3])
             buff = buff[3:]
 
             # Recieve as long there are too few bytes for the package.
-            while len(buff) < package_len:
-                buff += self.connection.recv(package_len)
+            while len(buff) < package_len and self.collect_more_samples():
+                try:
+                    buff += self.connection.recv(package_len)
+                except socket.error as e:
+                    pass  # timeout..
+
+            if not self.collect_more_samples():
+                break
 
             if package_type == PACKAGE_TYPE_DATA:
                 self.input(buff[0: package_len])

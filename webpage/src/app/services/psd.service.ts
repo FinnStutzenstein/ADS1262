@@ -87,7 +87,7 @@ export class PSDService {
         const resolution = metainfos[5] as number;
         const wss = metainfos[6] as number;
 
-        console.log('got frame ' + frameNumber + '/' + frameCount);
+        console.log('got frame ' + (frameNumber + 1) + '/' + frameCount);
 
         if (this.lastFrameNumber + 1 !== frameNumber) {
             console.log('Drop FFT Frame');

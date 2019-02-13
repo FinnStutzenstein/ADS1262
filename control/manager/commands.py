@@ -175,10 +175,10 @@ class BashCommand(BaseCommand):
     A special type of command, that does not interact with the server.
     Let every non-server command inherit from this base class.
     """
-    def __init__(self, command):
+    def __init__(self, command, main):
         # Some dummy values. No arguments. Ties does not mean, that this command can take arguments,
         # but they are not validated with `parse_args`.
-        super().__init__(0, 0, {'command': command}, None)
+        super().__init__(0, 0, {'command': command}, main)
 
     def get_command_bytes(self, *args, **kwargs):
         raise NotImplementedError('This is not allowed for a dummy command.')

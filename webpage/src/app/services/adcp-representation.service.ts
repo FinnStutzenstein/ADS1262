@@ -55,6 +55,7 @@ export class ADCPRepresentationService {
         }
 
         const payload = data.slice(3, data.byteLength);
+
         if (this.packetSubjects[packetType]) {
             this.packetSubjects[packetType].next(payload);
         } else {

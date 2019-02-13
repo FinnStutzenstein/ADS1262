@@ -113,11 +113,17 @@ export class State {
 
     public calibrationOffset: number;
     public get calibrationOffsetDiff(): string {
-        return '';
+        const diff_nv = (this.vRef * 10 * -this.calibrationOffset) / Math.pow(2, 24)
+        return diff_nv.toFixed(2) + ' nV';
     }
     public calibrationScale: number;
     public get calibrationScaleDiff(): string {
-        return '';
+        const diff = (this.calibrationScale / 0x400000) - 1.0;
+        if (Math.abs(diff) > 0.01) {
+            return (diff * 100).toFixed(2) + ' %';
+        } else {
+            return (diff * 1000000).toFixed(2) + ' ppm';
+        }
     }
 
     public measurements: { [id: number]: MeasurementState };
