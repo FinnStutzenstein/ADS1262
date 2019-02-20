@@ -3,6 +3,7 @@ import struct
 import threading
 import signal
 import sys
+import os.path
 
 from manager.base import CONNECTION_TYPE_DATA, PACKAGE_TYPE_DATA, base
 
@@ -149,6 +150,17 @@ class Main:
         self.stop_event.set()
 
 def main(connection, filename, N):
+    # Check, if file exsits.
+    if os.path.isfile(filename):
+        print('File "{}" exists!'.format(filename))
+        ok = False
+        while not ok:
+            inp = input('Do you want to override it? [y/n] ').lower()
+            ok = inp in ('y', 'n')
+        if inp == 'n':
+            print('Bye')
+            return
+
     global m
     m = Main(connection, filename, N)
     signal.signal(signal.SIGINT, signal_handler)

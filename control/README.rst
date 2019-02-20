@@ -46,7 +46,8 @@ Data aggregating tools
 ----------------------
 With ``recieve_data.py`` and ``recieve_fft.py`` you can visualize the measured data.
 The same host and port as in ``manage.py`` is used. ``collect_data.py`` writes a
-specified amount (or unlimited amount) of samples in a file.
+specified amount (or unlimited amount) of samples in a file. Using ``histogram.py``
+you can create a live historgram of the measurement.
 
 Calibration
 -----------
