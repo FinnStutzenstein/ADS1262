@@ -34,13 +34,14 @@ volatile uint8_t http_permitted = 1;
 // CRLF
 // <payload>
 
-// TODO: Always if something like data+2 is done, we need to check for out of bounds!!
 uint8_t handle_HTTP(connection_t* connection, uint8_t* _data, uint16_t len) {
 	char* data = (char*) _data;
 
+	/*if (data[len-1] != 0) {
+		data[len-1] = 0;
+	}*/
 	if (data[len] != 0) {
-		printf("A\n");
-		Error_Handler();
+		data[len] = 0;
 	}
 
 	if (strncmp(data, "GET", 3) != 0) {
