@@ -156,10 +156,9 @@ void DRDY_Interrupt() {
 
 		value_buffer->buffer[value_buffer_index].value = tennanovolt;
 		value_buffer->buffer[value_buffer_index].timestamp_delta = timestamp_delta;
-		uint8_t status_bits = (status.reg << 3) & 0xF0; // All PGA alarms are important (bits 1-4). Shift them
-		// into the upper nibble.
-
-		value_buffer->buffer[value_buffer_index++].id_and_status = (current_measurement_index & 0x0F) | status_bits;
+		uint8_t status_bits = (status.reg << 2) & 0xF8; // All PGA alarms and extclk are important (bits 1-5). Shift them
+		// into the upper 5 bits. The lower 3 bits are the measurement id.
+		value_buffer->buffer[value_buffer_index++].id_and_status = (current_measurement_index & 0x07) | status_bits;
 
 		if (value_buffer_index >= VALUE_BUFFER_SIZE) {
 			if (!send_buffer()) {

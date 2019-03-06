@@ -26,6 +26,17 @@ static void send_error(connection_t* connection, char* message, uint16_t statusc
 
 volatile uint8_t http_permitted = 1;
 
+// Lock access to the state-file on the SD-card.
+static osMutexId http_resource_mutex;
+
+/**
+ * Initialize this module.
+ */
+void http_init() {
+	osMutexDef(httpResourceMutex);
+	http_resource_mutex = osMutexCreate(osMutex(httpResourceMutex));
+}
+
 // HTTP request:
 // GET <resource> <protocol>CRLF
 // header1: value1 CRLF
@@ -195,6 +206,8 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 		sprintf(data_buffer->filename, "0:/www/%s", resource);
 	}
 
+	osMutexWait(http_resource_mutex, osWaitForever);
+
 	uint8_t exit = NOEXIT;
 	FIL file;
 	FRESULT fres;
@@ -219,8 +232,8 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 
 	// Continue, if the file was opened.
 	if (NOEXIT == exit) {
-		printf("openend %s\n", data_buffer->filename);
 		uint32_t filesize = f_size(&file);
+		printf("openend %s, size: %lu\n", data_buffer->filename, filesize);
 
 		// Get the MIME type.
 		char mime_type[25]; // application/octet-stream is the longest with 24+1 chars.
@@ -238,6 +251,9 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 		unsigned int bytes_read;
 		// Time the reading and sending
 		uint64_t start = measure_reference_timer_ticks;
+		uint8_t first = 1;
+
+		// Read in 64K blocks. The last iteration might send less data.
 		while (1) {
 			// Wait to read.
 			while (!http_permitted) {
@@ -245,9 +261,15 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 			}
 			fres = f_read(&file, data_buffer->buffer, sizeof data_buffer->buffer, &bytes_read);
 			if (fres != FR_OK || bytes_read == 0) {
-				break; // error or eof
+				break; // eof
 			}
 			printf("bytes read: %u\n", bytes_read);
+
+			if (first) {
+				first = 0;
+				char* b = data_buffer->buffer;
+				printf("first 8 bytes: %c %c %c %c %c %c %c %c\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+			}
 
 			// Send the 64K in 16K chunks..
 			unsigned int bytes_to_send = bytes_read;
@@ -260,7 +282,7 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 					osDelay(10);
 				}
 				netconn_write(connection->conn, bytes_to_send_position, blocksize, NETCONN_COPY);
-				printf("bytes send: %u\n", blocksize);
+				// printf("bytes send: %u\n", blocksize);
 				bytes_to_send -= blocksize;
 				bytes_to_send_position += blocksize;
 				osDelay(1); // general delay
@@ -271,10 +293,11 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 					osDelay(10);
 				}
 				netconn_write(connection->conn, bytes_to_send_position, bytes_to_send, NETCONN_COPY);
-				printf("bytes send: %u\n", bytes_to_send);
+				// printf("bytes send: %u\n", bytes_to_send);
 			}
 			printf("bytes send (sum): %u\n", bytes_read);
 		}
+
 		uint64_t end = measure_reference_timer_ticks;
 		printf("done reading\ntook %lums\n", (uint32_t)(end-start)/100);
 
@@ -283,6 +306,8 @@ static uint8_t deliver_resource(connection_t* connection, char* resource) {
 			exit = EXIT;
 		}
 	}
+
+	osMutexRelease(http_resource_mutex);
 
 	pool_free(connection_data_pool, data_buffer);
 	return exit;
@@ -300,9 +325,11 @@ static void get_mime_type(char* filename, char* mime_type) {
 	for (int i = filename_len - 1; i >= 0; i--) {
 		if (filename[i] == '.') {
 			ext = filename + i;
+			break;
 		}
 	}
 	if (NULL == ext) {
+		printf("MIME: no dot found\n");
 		strcpy(mime_type, "application/octet-stream");
 	} else {
 		ext++;
@@ -319,7 +346,7 @@ static void get_mime_type(char* filename, char* mime_type) {
 		} else if (strcmp(ext, "map") == 0) {
 			strcpy(mime_type, "application/octet-stream");
 		} else {
-			printf("Unkown MIME type: %s", ext);
+			printf("MIME: unknown type %s", ext);
 			strcpy(mime_type, "application/octet-stream");
 		}
 	}

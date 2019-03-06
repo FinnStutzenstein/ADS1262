@@ -379,6 +379,11 @@ inline uint8_t ADS1262_read_is_internal_reference_used() {
 	return registerMap.POWER.bit.INTREF && registerMap.REFMUX.bit.RMUXN == 0 && registerMap.REFMUX.bit.RMUXP == 0;
 }
 
+inline uint8_t ADS1262_read_reference_pins() {
+	ADS1262_read_register(ADS1262_REFMUX);
+	return (registerMap.REFMUX.bit.RMUXN & 0x0F) | ((registerMap.REFMUX.bit.RMUXP & 0x0F) << 4);
+}
+
 inline void ADS1262_set_reference_polarity_normal() {
 	registerMap.MODE0.bit.REFREV = ADS1262_DISABLE;
 	ADS1262_write_register(ADS1262_MODE0);

@@ -220,6 +220,9 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 				{
 					if (BSP_SD_GetCardState() == SD_TRANSFER_OK)
 					{
+						char* b = buff;
+						printf("SD first 8 bytes: %c %c %c %c %c %c %c %c\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+
 						res = RES_OK;
 #if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
                //the SCB_InvalidateDCache_by_Addr() requires a 32-Byte aligned address,

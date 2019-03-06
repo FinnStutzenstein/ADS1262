@@ -11,6 +11,7 @@
 #include "connection.h"
 #include "send_data.h"
 #include "sd_config.h"
+#include "http.h"
 
 static uint8_t use_dhcp;
 static uint8_t dhcp_timeout;
@@ -54,6 +55,7 @@ void network_init(sd_config_t* config)
 
 	connections_init();
 	send_data_init();
+	http_init();
 
 	ip4_addr_copy(default_ip_addr, config->ip_addr);
 	ip4_addr_copy(default_netmask, config->netmask);
