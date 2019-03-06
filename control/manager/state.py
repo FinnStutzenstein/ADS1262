@@ -5,8 +5,8 @@ samplerate_reverse_lookup = [2.5, 5, 10, 16.6, 20, 50, 60, 100, 400,
                              1200, 2400, 4800, 7200, 14400, 19200, 38400]
 filter_reverse_lookup = ['sinc1', 'sinc2', 'sinc3', 'sinc4', 'FIR']
 pga_reverse_lookup = ['1', '2', '4', '8', '16', '32']
-ref_pos_pin_lookup = ['0', '2', '4', 'AVDD']
-ref_neg_pin_lookup = ['1', '3', '5', 'AVSS']
+ref_pos_pin_lookup = ['Int. P', '0', '2', '4', 'AVDD']
+ref_neg_pin_lookup = ['Int. N', '1', '3', '5', 'AVSS']
 window_reverse_lookup = {
     0: 'Hann',
     1: 'Berlett',

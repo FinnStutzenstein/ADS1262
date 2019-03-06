@@ -185,8 +185,8 @@ class DataThread(threading.Thread):
                 buff[i*7 + self.meta_info_size: (i+1)*7 + self.meta_info_size])
             timestamp = (timestamp_delta + ref)/100  # in ms.
 
-            id = id_and_status & 0x0F
-            status = (id_and_status & 0xF0) >> 4
+            id = id_and_status & 0x07
+            status = (id_and_status & 0xF8) >> 3
             self.handle_status(id, status)
 
             if self.data_max_freq is None:
@@ -201,29 +201,43 @@ class DataThread(threading.Thread):
     def handle_status(self, id, status):
         if id not in self.last_status:
             self.last_status[id] = status
-            if status != 0:
-                self.print_status(id, status)
-        else:
-            if status != self.last_status[id]:
+            self.print_status(id, status)
+        elif status != self.last_status[id]:
                 self.last_status[id] = status
                 self.print_status(id, status)
 
     def print_status(self, id, status):
-        if status == 0:
-            print('Status of measurement {} changed to OK state.'.format(id))
+        alarms_set = status & 0x0F
+        msg = ''
+        if alarms_set == 0:
+            msg += 'Measurement {} no alarms set.'.format(id)
         else:
-            print('Status of measurement {} changed:'.format(id))
             alarms = ''
+            alarm_count = 0
             if status & 0x01:
                 alarms += 'differential, '
+                alarm_count += 1
             if status & 0x02:
                 alarms += 'high, '
+                alarm_count += 1
             if status & 0x04:
                 alarms += 'low, '
+                alarm_count += 1
             if status & 0x08:
                 alarms += 'reference, '
+                alarm_count += 1
             alarms = alarms[:-2]
-            print('  {} alarm(s) are set'.format(alarms))
+            msg += 'Measurement {} '.format(id)
+            if alarm_count == 1:
+                msg += 'alarm: '
+            else:
+                msg += 'alarms: '
+            msg += alarms + '. Clock: '
+        if (status & 0x10) == 0:
+            msg += 'Intern'
+        else:
+            msg += 'Extern'
+        print(msg)
 
 
 def main(connection):
